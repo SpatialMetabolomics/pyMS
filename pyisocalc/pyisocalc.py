@@ -32,7 +32,7 @@ from numpy import copysign
 from itertools import groupby
 import operator
 from pyMS.mass_spectrum import mass_spectrum
-from pyCentroidDetection import gradient
+import centroid_detection
 
 #slowly changed to IUPAC 1997 isotopic compositions and IUPAC 2007 masses
 # see http://pac.iupac.org/publications/pac/pdf/1998/pdf/7001x0217.pdf for
@@ -417,8 +417,8 @@ def isodist(molecules,charges=0,output='',plot=False,sigma=0.35,resolution=250,c
 	molecules=molecules.split(',')
 	for element in molecules:
 		element=formulaExpander(element)
-                if verbose:
-		    print ('The mass of %(substance)s is %(Mass)f and the calculated charge is %(Charge)d with m/z of %(Mz)f.' % {'substance': \
+		if verbose:
+			print ('The mass of %(substance)s is %(Mass)f and the calculated charge is %(Charge)d with m/z of %(Mz)f.' % {'substance': \
 			element, 'Mass': molmass(element), 'Charge': molcharge(element),'Mz':mz(molmass(element),molcharge(element),charges)})
 
 	if charges==0:
@@ -426,7 +426,7 @@ def isodist(molecules,charges=0,output='',plot=False,sigma=0.35,resolution=250,c
 		if charges==0:
 			charges=1
 	else:
-	    if verbose:
+		if verbose:
 		print "Using user-supplied charge of %d for mass spectrum" % charges
 	
 	isomasses=isotopemasses(element)
@@ -443,11 +443,11 @@ def isodist(molecules,charges=0,output='',plot=False,sigma=0.35,resolution=250,c
 			#print i,final[i]
 	ms_output = mass_spectrum()
 	if do_centroid:
-	        pts = resolution2pts(min(final.keys()),max(final.keys()),resolution)
-	        xvector,yvector=genGaussian(final,sigma,pts) #slow
-	        
-	        ms_output.add_spectrum(xvector,yvector)
-		mz_list,intensity_list,centroid_list = gradient.gradient(ms_output.get_spectrum()[0],ms_output.get_spectrum()[1],max_output=-1,weighted_bins=5)
+		pts = resolution2pts(min(final.keys()),max(final.keys()),resolution)
+		xvector,yvector=genGaussian(final,sigma,pts) #slow
+	
+		ms_output.add_spectrum(xvector,yvector)
+		mz_list,intensity_list,centroid_list = centroid_detection.gradient(ms_output.get_spectrum()[0],ms_output.get_spectrum()[1],max_output=-1,weighted_bins=5)
 		ms_output.add_centroids(mz_list,intensity_list)
 	else: 
 		mz_idx = sorted(final.keys())
