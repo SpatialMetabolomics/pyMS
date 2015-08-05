@@ -31,8 +31,8 @@ from numpy import linspace #for gaussian
 from numpy import copysign
 from itertools import groupby
 import operator
-from pyMS.mass_spectrum import mass_spectrum
-import centroid_detection
+from ..mass_spectrum import mass_spectrum
+from ..centroid_detection import gradient
 
 #slowly changed to IUPAC 1997 isotopic compositions and IUPAC 2007 masses
 # see http://pac.iupac.org/publications/pac/pdf/1998/pdf/7001x0217.pdf for
@@ -427,7 +427,7 @@ def isodist(molecules,charges=0,output='',plot=False,sigma=0.35,resolution=250,c
 			charges=1
 	else:
 		if verbose:
-		print "Using user-supplied charge of %d for mass spectrum" % charges
+			print "Using user-supplied charge of %d for mass spectrum" % charges
 	
 	isomasses=isotopemasses(element)
 	isoratios=isotoperatios(element)
@@ -447,7 +447,7 @@ def isodist(molecules,charges=0,output='',plot=False,sigma=0.35,resolution=250,c
 		xvector,yvector=genGaussian(final,sigma,pts) #slow
 	
 		ms_output.add_spectrum(xvector,yvector)
-		mz_list,intensity_list,centroid_list = centroid_detection.gradient(ms_output.get_spectrum()[0],ms_output.get_spectrum()[1],max_output=-1,weighted_bins=5)
+		mz_list,intensity_list,centroid_list = gradient(ms_output.get_spectrum()[0],ms_output.get_spectrum()[1],max_output=-1,weighted_bins=5)
 		ms_output.add_centroids(mz_list,intensity_list)
 	else: 
 		mz_idx = sorted(final.keys())
