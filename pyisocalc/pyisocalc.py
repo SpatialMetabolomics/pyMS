@@ -31,7 +31,7 @@ from numpy import linspace #for gaussian
 from numpy import copysign
 from itertools import groupby
 import operator
-from ..mass_spectrum import mass_spectrum
+from ..mass_spectrum import MassSpectrum
 from ..centroid_detection import gradient
 
 #slowly changed to IUPAC 1997 isotopic compositions and IUPAC 2007 masses
@@ -441,7 +441,7 @@ def isodist(molecules,charges=0,output='',plot=False,sigma=0.35,resolution=250,c
 	#for i in sorted(final.keys()): #fast
 		#if final[i]>cutoff:
 			#print i,final[i]
-	ms_output = mass_spectrum()
+	ms_output = MassSpectrum()
 	if do_centroid:
 		pts = resolution2pts(min(final.keys()),max(final.keys()),resolution)
 		xvector,yvector=genGaussian(final,sigma,pts) #slow
