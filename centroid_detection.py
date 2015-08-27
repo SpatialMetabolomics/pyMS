@@ -1,4 +1,5 @@
 import numpy as np
+
 def gradient(mzs,intensities,**opt_args):
     function_args = {'max_output': -1, 'weighted_bins':1,'min_intensity':0}
     for key, val in opt_args.iteritems(): 
@@ -51,11 +52,34 @@ def gradient(mzs,intensities,**opt_args):
         mzs_list = mzs_list[good_idx]
         intensities_list = intensities_list[good_idx]
         indices_list = indices_list[good_idx]
-        bin_shift = range(-weighted_bins,weighted_bins+1)
-        for ii in range(0,len(mzs_list)):
-            bin_idx = bin_shift+indices_list[ii]
-            mzs_list[ii] = np.average(mzs[bin_idx],weights=intensities[bin_idx])
-            indices_list[ii] = indices_list[ii] + np.argmax(intensities[bin_idx]) - weighted_bins
-            intensities_list[ii] = intensities[indices_list[ii]]
-            #mzs_list[ii] = np.mean(mzs[bin_idx])
+        r = pick_max_(mzs, intensities, mzs_list, intensities_list, indices_list, weighted_bins)
+        mzs_list = r[0,:]
+        intensities_list = r[1,:]
+        indices_list = r[2,:].astype(int)
     return  (mzs_list,intensities_list,indices_list)
+
+def pick_max_(mzs, intensities, mzs_list, intensities_list, indices_list, weighted_bins):
+    result = np.zeros((3, len(mzs_list)))
+    for ii in xrange(len(mzs_list)):
+        s = w = 0.0
+        max_intensity_idx = 0
+        max_intensity = -1
+        for k in xrange(-weighted_bins, weighted_bins+1):
+            idx = indices_list[ii] + k
+            mz = mzs[idx]
+            intensity = intensities[idx]
+            w += intensity
+            s += mz * intensity
+            if intensity > max_intensity:
+                max_intensity = intensity
+                max_intensity_idx = idx
+        result[0][ii] = s / w
+        result[1][ii] = max_intensity
+        result[2][ii] = max_intensity_idx
+    return result
+
+try:
+    from numba import njit
+    pick_max_ = njit(pick_max_)
+except ImportError:
+    pass
