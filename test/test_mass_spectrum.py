@@ -1,27 +1,26 @@
-'''
+"""
 Created on 27.08.2015
 
 @author: Dominik Fay
-'''
+"""
+import unittest
+
 import numpy
 from numpy.ma.testutils import assert_array_equal
-import unittest
 
 import mass_spectrum
 
 
 class MassSpectrumTest(unittest.TestCase):
-
-
     def test_init(self):
-        '''Check that spectrum is empty on initialization.'''
+        """Check that spectrum is empty on initialization."""
         ms = mass_spectrum.MassSpectrum()
         mzs, ints = ms.get_spectrum()
         assert_array_equal([], mzs)
         assert_array_equal([], ints)
 
     def test_copy_if_empty(self):
-        '''Check that get_spectrum creates a new numpy array if the spectrum has not been set.'''
+        """Check that get_spectrum creates a new numpy array if the spectrum has not been set."""
         ms = mass_spectrum.MassSpectrum()
         mzs1, ints1 = ms.get_spectrum()
         mzs2, ints2 = ms.get_spectrum()
@@ -30,7 +29,7 @@ class MassSpectrumTest(unittest.TestCase):
         self.assertFalse(ints1 is ints2)
 
     def test_copy_if_list(self):
-        '''Check that get_spectrum creates a new numpy array if the spectrum has been set as list.'''
+        """Check that get_spectrum creates a new numpy array if the spectrum has been set as list."""
         ms = mass_spectrum.MassSpectrum()
 
         mzs_list = [1, 2, 3]
@@ -42,7 +41,7 @@ class MassSpectrumTest(unittest.TestCase):
         self.assertFalse(ints_list is ints_array)
 
     def test_no_copy_if_array(self):
-        '''Check that get_spectrum does not create a new numpy array if the spectrum has been set as array.'''
+        """Check that get_spectrum does not create a new numpy array if the spectrum has been set as array."""
         ms = mass_spectrum.MassSpectrum()
 
         mzs_array1 = numpy.array([1, 2, 3])
@@ -54,7 +53,7 @@ class MassSpectrumTest(unittest.TestCase):
         self.assertTrue(ints_array1 is ints_array2)
 
     def test_use_centroid_if_given(self):
-        '''Check that get_spectrum returns the centroids if they have been set.'''
+        """Check that get_spectrum returns the centroids if they have been set."""
         ms = mass_spectrum.MassSpectrum()
 
         mzs_profile1 = numpy.array([1, 2, 3])
@@ -71,8 +70,8 @@ class MassSpectrumTest(unittest.TestCase):
         self.assertTrue(mzs_centroid1 is mzs_centroid2)
         self.assertTrue(ints_centroid1 is ints_centroid2)
 
-        '''Check that get_spectrum raises an IOException when an unknown value of the kwarg 'source' is passed.'''
     def test_IOError_if_unknown_kwarg(self):
+        """Check that get_spectrum raises an IOError when an unknown value of the kwarg 'source' is passed."""
         ms = mass_spectrum.MassSpectrum()
         self.assertRaises(IOError, ms.get_spectrum, source='asdf')
 
