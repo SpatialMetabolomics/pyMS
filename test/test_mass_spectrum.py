@@ -71,10 +71,24 @@ class MassSpectrumTest(unittest.TestCase):
         self.assertTrue(mzs_centroid1 is mzs_centroid2)
         self.assertTrue(ints_centroid1 is ints_centroid2)
 
-    def test_IOException_if_unknown_kwarg(self):
         '''Check that get_spectrum raises an IOException when an unknown value of the kwarg 'source' is passed.'''
+    def test_IOError_if_unknown_kwarg(self):
         ms = mass_spectrum.MassSpectrum()
         self.assertRaises(IOError, ms.get_spectrum, source='asdf')
+
+    def test_IOError_if_different_arr_sizes(self):
+        """Check that add_spectrum and add_centroids raise an IOError when the size of the m/z array and the
+        intensity array differ.
+        """
+        ms = mass_spectrum.MassSpectrum()
+        test_cases = (
+            ([], [1]), ([-7.4], []), ([2968.2395, 29305.23, -23698.5, 1, 2 ** 28], range(2)),
+            (range(198), range(102958)))
+
+        for case in test_cases:
+            self.assertRaises(IOError, ms.add_spectrum, *case)
+            self.assertRaises(IOError, ms.add_centroids, *case)
+
 
 if __name__ == "__main__":
     unittest.main()

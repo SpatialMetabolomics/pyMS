@@ -55,7 +55,6 @@ class MassSpectrum:
             intensities = self.__get_intensities_centroids()
         else:
             raise IOError('spectrum source should be profile or centroids')
-        max_idx = np.argmax(intensities)
         return mzs, intensities
 
 
