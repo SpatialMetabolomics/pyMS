@@ -34,6 +34,7 @@ import operator
 from ..mass_spectrum import MassSpectrum
 from ..centroid_detection import gradient
 
+import numpy as np
 #slowly changed to IUPAC 1997 isotopic compositions and IUPAC 2007 masses
 # see http://pac.iupac.org/publications/pac/pdf/1998/pdf/7001x0217.pdf for
 # natural variations in isotopic composition
@@ -257,105 +258,49 @@ def formulaExpander(formula):
 		formula=formula.replace(lopoff[0],'')
 	return formula
 
-
 def trim(ry,my):
-	if len(ry)>10:
-		my=[n for n in my]
-		ry=[round(n,8) for n in ry]
-		pairs=zip(my,ry)
-		signals = dict((key, tuple(v for (k, v) in pairs))
-			for (key, pairs) in groupby(sorted(pairs), operator.itemgetter(0)))
-		keys=[]
-		phrases=[]
-		for item in signals.keys():
-			phrases+= map(lambda n:sum(n),[signals[item]])
-			keys+=[item]
-		my=keys
-		ry=phrases
-	return ry,my
+    if len(ry)>10:
+        m, n = my, ry.round(8)
+        m, inv = np.unique(m, return_inverse=True)
+        n = np.bincount(inv, weights=n)
+        return n, m
+    return ry, my
 
-def slowcartesian(rx,mx,ry,my,i,cutoff):
-
-	xp=[]
-	xs=[]
-	maxx=max(ry)
-	ry=[n/maxx for n in ry] #normalise
-	drop=0
-	for k in range(0,len(rx[i])):
-		kk=rx[i][k]	
-		kl=mx[i][k]
-		for j in range(0,len(ry)):
-			jk=ry[j]
-			jl=my[j]
-			comp=jk*kk
-			if comp>cutoff: #small number used as cutoff. Useful for really large molecules
-				xp+=[jk*kk]
-				xs+=[jl+kl]
-			elif drop==0:
-				drop=1
-	xp,xs=trim(xp,xs) #sort out dupes to keep the matrix small
-	i=i+1
-	if i<len(rx) and len(xp)<1000000: #just a large number to prevent memory crashes
-		xp,xs=slowcartesian(rx,mx,xp,xs,i,cutoff)
-	return (xp,xs)
+def slowcartesian(rx,mx,cutoff):
+    ry, my = asarray(rx[0]), asarray(mx[0])
+    for i in xrange(1, len(rx)):
+        ry /= max(ry)
+        newr = np.outer(rx[i], ry).ravel()
+        newm = np.add.outer(mx[i], my).ravel()
+        js = np.where(newr > cutoff)[0]
+        ry,my = trim(newr[js], newm[js])
+    return (ry,my)
 
 def isotopes(ratios,masses,cutoff):
-	xs,xp=slowcartesian(ratios,masses,ratios[0],masses[0],1,cutoff)
-	xs=[round(n,8) for n in xs]
-	xp=[round(n,8) for n in xp]
-	return(xs,xp)
+    xs,xp=slowcartesian(ratios,masses,cutoff)
+    return (xs.round(8), xp.round(8))
 
 
 ##################################################################################
 # Does housekeeping to generate final intensity ratios and puts it into a dictionary
 ##################################################################################
 def genDict(m,n,charges,cutoff):
-	newn=[]
-	newm=[]
-	for i in range(0,len(n)):
-		if n[i]>cutoff/1000:
-			newn+=[n[i]]
-			newm+=[m[i]]
-	n=newn
-	m=newm
-
-	pairs=zip(m,n)
-	signals = dict((key, tuple(v for (k, v) in pairs))
-		for (key, pairs) in groupby(sorted(pairs), operator.itemgetter(0)))
-
-	keys=[]
-	phrases=[]
-	for item in signals.keys():
-		phrases+= map(lambda n:sum(n),[signals[item]])
-		keys+=[(item-(charges*mass_electron))/abs(charges)]
-
-	semifinal=dict(zip(keys,phrases))
-
-	largest_value=max(phrases)
-	keys=[]
-	phrases=[]
-	for eachkey in sorted(semifinal):
-		keys+=[eachkey]
-		phrases+=[semifinal[eachkey]*100/largest_value]
-	final=dict(zip(keys,phrases))
-	return final
-
-def gaussian(x,c,s):
-	y=1/(s*sqrt(2*pi))*exp(-0.5*((x-c)/s)**2)
-	return (y)
+    m, n = asarray(m), asarray(n)
+    filter = n > cutoff/1000
+    m, inv = np.unique(m[filter], return_inverse=True)
+    n = np.bincount(inv, weights=n[filter])
+    n *= 100.0 / max(n)
+    m -= charges*mass_electron
+    m /= abs(charges)
+    return dict(zip(m, n))
 
 def genGaussian(final,sigma, pts):
-	x=final.keys()
-	y=final.values()
-	xvector=linspace(min(x)-1,max(x)+1,pts)
-	yvector=[]
-	for i in xvector:
-		yatx=0
-		for j in range(0,len(x)):
-			yatx+=y[j]*gaussian(x[j],i,sigma)
-		yvector+=[yatx]
-	yvector=true_divide(yvector,max(yvector)/100)
-	return (xvector,yvector)
+    mzs = np.array(final.keys())
+    intensities = np.array(final.values())
+    xvector = np.linspace(min(mzs)-1,max(mzs)+1,pts)
+    yvector = intensities.dot(exp(-0.5 * (np.add.outer(mzs, -xvector)/sigma)**2))
+    yvector *= 100.0 / max(yvector)
+    return (xvector,yvector)
 
 def mz(a,b,c):
 	if c==0:
@@ -434,17 +379,14 @@ def isodist(molecules,charges=0,output='',plot=False,sigma=0.35,resolution=250,c
 
 	if len(isomasses)!=1:
 		ratios,masses=isotopes(isoratios,isomasses,cutoff) #slow
-		final=genDict(masses,ratios,charges,cutoff) #very slow
+		final=genDict(masses,ratios,charges,cutoff)
 	else:
 		final=genDict(isomasses[0],isoratios[0],charges,cutoff)
 	
-	#for i in sorted(final.keys()): #fast
-		#if final[i]>cutoff:
-			#print i,final[i]
 	ms_output = MassSpectrum()
 	if do_centroid:
 		pts = resolution2pts(min(final.keys()),max(final.keys()),resolution)
-		xvector,yvector=genGaussian(final,sigma,pts) #slow
+		xvector,yvector=genGaussian(final,sigma,pts)
 	
 		ms_output.add_spectrum(xvector,yvector)
 		mz_list,intensity_list,centroid_list = gradient(ms_output.get_spectrum()[0],ms_output.get_spectrum()[1],max_output=-1,weighted_bins=5)
