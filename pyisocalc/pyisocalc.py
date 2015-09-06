@@ -2,14 +2,15 @@
 #########################################################################
 # Author: Andy Ohlin (debian.user@gmx.com)
 # Modified by: Andrew Palmer (palmer@embl.de)
+#              Artem Tarasov (lomereiter@gmail.com)
 #
 # Example usage:
 # pyisocalc('Fe(ClO3)5',plot=false,gauss=0.25,charge=-2,resolution=250)
 # Do "pyisocalc('--help') to find out more
 #
 ##########################################################################
-ver='0.1 (3 Jan. 2015)'
-# Version 0.1 -- Modified from v0.8 of Andy Ohlin's code
+ver='0.2 (5 Sep. 2015)'
+# Version 0.2 -- Modified from v0.8 of Andy Ohlin's code
 #
 # Dependencies:
 # python2.7, python-numpy, python-matplotlib
@@ -23,18 +24,17 @@ ver='0.1 (3 Jan. 2015)'
 import re #for regular expressions
 import sys
 import time #for code execution analysis
-from numpy import matrix,transpose # for molw calc
+import numpy as np
 from numpy import shape,asarray,prod,zeros,repeat #for cartesian product
 from numpy import random,histogram # for binning
 from numpy import pi,sqrt,exp,true_divide,multiply # misc math functions
 from numpy import linspace #for gaussian
 from numpy import copysign
-from itertools import groupby
+from itertools import groupby, imap
 import operator
 from ..mass_spectrum import MassSpectrum
 from ..centroid_detection import gradient
 
-import numpy as np
 #slowly changed to IUPAC 1997 isotopic compositions and IUPAC 2007 masses
 # see http://pac.iupac.org/publications/pac/pdf/1998/pdf/7001x0217.pdf for
 # natural variations in isotopic composition
@@ -149,83 +149,35 @@ PeriodicTable ={
 
 mass_electron = 0.00054857990924
  
+from collections import namedtuple
+FormulaSegment = namedtuple('FormulaSegment', ['atom', 'number'])
+
 #######################################
 # Collect properties
 #######################################
-def getMass(x):
-	atom=re.findall('[A-Z][a-z]*',x)
-	number=re.findall('[0-9]+', x)
-	if len(number) == 0:
-		multiplier = 1
-	else:
-		multiplier = float(number[0])
-	atomic_mass=float(matrix(PeriodicTable[atom[0]][2])*transpose(matrix(PeriodicTable[atom[0]][3])))
-# That's right -- the molecular weight is based	on the isotopes and ratios
-	return (atomic_mass*multiplier)
+def getAverageMass(segment):
+    masses, ratios = PeriodicTable[segment.atom][2:4]
+    atomic_mass = np.dot(masses, ratios)
+    return atomic_mass * segment.number
 
-def getCharge(x):
-	atom=re.findall('[A-Z][a-z]*',x)
-	number=re.findall('[0-9]+', x)
-	if len(number) == 0:
-		multiplier = 1
-	else:
-		multiplier = float(number[0])
-	atomic_charge=float(PeriodicTable[atom[0]][1])
-	return (atomic_charge*multiplier)
-
-def getIsotope(x,m):
-	atom=re.findall('[A-Z][a-z]*',x)
-	number=re.findall('[0-9]+', x)
-	if len(number) == 0:
-		multiplier = 1
-	else:
-		multiplier = float(number[0])
-	isotope_ratio=PeriodicTable[atom[0]][m]
-	stack=[isotope_ratio]
-	for n in range(1,int(multiplier)):
-		stack=stack+[isotope_ratio]
-	return (stack)
+def getCharge(segment):
+    atomic_charge = PeriodicTable[segment.atom][1]
+    return atomic_charge * segment.number
 
 #####################################################
 # Iterate over expanded formula to collect property
 #####################################################
+def getSegments(formula):
+    segments = re.findall('([A-Z][a-z]*)([0-9]*)',formula)
+    for atom, number in segments:
+        number = int(number) if number else 1
+        yield FormulaSegment(atom, number)
+
 def molmass(formula):
-	mass=0
-	while (len(formula)>0):
-		segments = re.findall('[A-Z][a-z]*[0-9]*',formula)
-		for i in range(0, len(segments)):
-			mass+=getMass(segments[i])
-		formula=re.sub(formula, '', formula)
-	return mass
+    return sum(imap(getAverageMass, getSegments(formula)))
 
 def molcharge(formula):
-	charge=0
-	while (len(formula)>0):
-		segments = re.findall('[A-Z][a-z]*[0-9]*',formula)
-		for i in range(0, len(segments)):
-			charge+=getCharge(segments[i])		
-		formula=re.sub(formula, '', formula)
-	return charge
-
-def isotoperatios(formula):
-	t=time.time()
-	isotope=[]
-	while (len(formula)>0):
-		segments = re.findall('[A-Z][a-z]*[0-9]*',formula)
-		for i in range(0, len(segments)):
-			isotope+=getIsotope(segments[i],3)
-		formula=re.sub(formula, '', formula)
-	return isotope
-
-def isotopemasses(formula):
-	t=time.time()
-	isotope=[]
-	while (len(formula)>0):
-		segments = re.findall('[A-Z][a-z]*[0-9]*',formula)
-		for i in range(0, len(segments)):
-			isotope+= getIsotope(segments[i],2)
-		formula=re.sub(formula, '', formula)
-	return isotope
+    return sum(imap(getCharge, getSegments(formula)))
 
 ################################################################################
 #expands ((((M)N)O)P)Q to M*N*O*P*Q
@@ -258,39 +210,57 @@ def formulaExpander(formula):
 		formula=formula.replace(lopoff[0],'')
 	return formula
 
-def trim(ry,my):
-    if len(ry)>10:
-        m, n = my, ry.round(8)
-        m, inv = np.unique(m, return_inverse=True)
-        n = np.bincount(inv, weights=n)
-        return n, m
-    return ry, my
+def singleElementPattern(segment, threshold=1e-9):
+    # see 'Efficient Calculation of Exact Fine Structure Isotope Patterns via the
+    #      Multidimensional Fourier Transform' (A. Ipsen, 2014)
+    element, amount = segment.atom, segment.number
+    iso_mass, iso_abundance = map(np.array, PeriodicTable[element][2:4])
+    if len(iso_abundance) == 1:
+        return np.array([1.0]), iso_mass * amount
+    if amount == 1:
+        return iso_abundance / iso_abundance.max(), iso_mass
+    dim = len(iso_abundance) - 1
+    abundance = np.zeros([amount + 1] * dim)
+    abundance.flat[0] = iso_abundance[0]
+    abundance.flat[(amount+1)**np.arange(dim)] = iso_abundance[-1:0:-1]
+    abundance = np.real(np.fft.ifftn(np.fft.fftn(abundance) ** amount))
+    significant = np.where(abundance > threshold)
+    intensities = abundance[significant]
+    masses = amount * iso_mass[0] + (iso_mass[1:] - iso_mass[0]).dot(significant)
+    return intensities / intensities.max(), masses
 
-def slowcartesian(rx,mx,cutoff):
+def trim(ry, my):
+    m, n = my, ry.round(8)
+    m, inv = np.unique(m, return_inverse=True)
+    n = np.bincount(inv, weights=n)
+    return n, m
+
+def cartesian(rx, mx, cutoff):
     ry, my = asarray(rx[0]), asarray(mx[0])
     for i in xrange(1, len(rx)):
         ry /= max(ry)
         newr = np.outer(rx[i], ry).ravel()
         newm = np.add.outer(mx[i], my).ravel()
         js = np.where(newr > cutoff)[0]
-        ry,my = trim(newr[js], newm[js])
-    return (ry,my)
+        ry, my = newr[js], newm[js]
+    return trim(ry, my)
 
-def isotopes(ratios,masses,cutoff):
-    xs,xp=slowcartesian(ratios,masses,cutoff)
+def isotopes(segments, cutoff):
+    patterns = [singleElementPattern(x, cutoff) for x in segments]
+    ratios = [x[0] for x in patterns]
+    masses = [x[1] for x in patterns]
+    xs, xp = cartesian(ratios,masses,cutoff)
     return (xs.round(8), xp.round(8))
-
 
 ##################################################################################
 # Does housekeeping to generate final intensity ratios and puts it into a dictionary
 ##################################################################################
 def genDict(m,n,charges,cutoff):
     m, n = asarray(m), asarray(n)
-    filter = n > cutoff/1000
-    m, inv = np.unique(m[filter], return_inverse=True)
-    n = np.bincount(inv, weights=n[filter])
+    filter = n > cutoff
+    m, n = m[filter], n[filter]
     n *= 100.0 / max(n)
-    m -= charges*mass_electron
+    m -= charges * mass_electron
     m /= abs(charges)
     return dict(zip(m, n))
 
@@ -366,28 +336,23 @@ def isodist(molecules,charges=0,output='',plot=False,sigma=0.35,resolution=250,c
 			print ('The mass of %(substance)s is %(Mass)f and the calculated charge is %(Charge)d with m/z of %(Mz)f.' % {'substance': \
 			element, 'Mass': molmass(element), 'Charge': molcharge(element),'Mz':mz(molmass(element),molcharge(element),charges)})
 
+	segments = list(getSegments(element))
+
 	if charges==0:
-		charges=molcharge(element)
+		charges=sum(getCharge(x) for x in segments)
 		if charges==0:
 			charges=1
 	else:
 		if verbose:
 			print "Using user-supplied charge of %d for mass spectrum" % charges
-	
-	isomasses=isotopemasses(element)
-	isoratios=isotoperatios(element)
 
-	if len(isomasses)!=1:
-		ratios,masses=isotopes(isoratios,isomasses,cutoff) #slow
-		final=genDict(masses,ratios,charges,cutoff)
-	else:
-		final=genDict(isomasses[0],isoratios[0],charges,cutoff)
-	
+	ratios, masses = isotopes(segments, cutoff)
+	final = genDict(masses, ratios, charges, cutoff)
+
 	ms_output = MassSpectrum()
 	if do_centroid:
 		pts = resolution2pts(min(final.keys()),max(final.keys()),resolution)
 		xvector,yvector=genGaussian(final,sigma,pts)
-	
 		ms_output.add_spectrum(xvector,yvector)
 		mz_list,intensity_list,centroid_list = gradient(ms_output.get_spectrum()[0],ms_output.get_spectrum()[1],max_output=-1,weighted_bins=5)
 		ms_output.add_centroids(mz_list,intensity_list)
