@@ -57,6 +57,8 @@ class MassSpectrum:
             raise IOError('spectrum source should be profile or centroids')
         return mzs, intensities
 
+# for compatibility with andy-d-palmer/pyIMS
+mass_spectrum = MassSpectrum
 
 class MSn_spectrum(MassSpectrum):
     def __init__(self):
