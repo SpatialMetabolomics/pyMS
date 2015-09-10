@@ -60,8 +60,8 @@ class CentroidDetectionTest(common.MSTestCase):
             # print "%s -> %s" % (ints_in, ints_out)
             # above threshold
             self.assertGreaterEqual(min(ints_out), th)
-            # max is greater than or equal to input max
-            self.assertGreaterEqual(max(ints_out), max(ints_in))
+            # max is less than or equal to input max
+            self.assertLessEqual(max(ints_out), max(ints_in))
         elif max_out != 0:
             # check that there was really no intensity higher than th
             self.assertLess(max(ints_in), th, msg="Empty results although th<=max(intensites). Input: mz=%s, int=%s, "

@@ -20,8 +20,8 @@ class MSTestCase(unittest.TestCase):
             ([1, 2], [1, 1]),
             ([1, 2, 3, 4], [4, 8, 2, 1]),
             ([4.7, 4.9, 11.8, 56.4], [462.12, 1172.45, 13.123, 123.45]),
-            (sorted([10000 * random.random() for _ in range(7)]), [5000 * random.random() for _ in range(
-                7)]),
+            (sorted([10000 * random.random() for _ in range(15)]), [5000 * random.random() for _ in range(
+                15)]),
             (sorted([10000 * random.random() for _ in range(2000)]), [5000 * random.random() for _ in range(
                 2000)])
         ]
