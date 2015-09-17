@@ -218,7 +218,6 @@ def formula_expander(formula):
         for i in parenthetical:
             p = re.findall('[0-9]+', str(re.findall('\)[0-9]+', i)))
             j = re.findall('[A-Z][a-z]*[0-9]*', i)
-            oldj = j
             for n in range(0, len(j)):
                 numero = re.findall('[0-9]+', j[n])
                 if len(numero) != 0:
@@ -235,7 +234,7 @@ def formula_expander(formula):
             formula = formula.replace('(', '')
             formula = formula.replace(')', '')
     lopoff = re.findall('[A-Z][a-z]*0', formula)
-    if lopoff != []:
+    if lopoff:
         formula = formula.replace(lopoff[0], '')
     return formula
 
@@ -302,7 +301,7 @@ def gen_gaussian(final, sigma, pts):
     xvector = np.linspace(min(mzs) - 1, max(mzs) + 1, pts)
     yvector = intensities.dot(exp(-0.5 * (np.add.outer(mzs, -xvector) / sigma) ** 2))
     yvector *= 100.0 / max(yvector)
-    return (xvector, yvector)
+    return xvector, yvector
 
 
 def mz(a, b, c):
@@ -369,7 +368,7 @@ def isodist(molecules, charges=0, output='', plot=False, sigma=0.35, resolution=
             verbose=False):
     exit = checkhelpcall(molecules)
     save = checkoutput(output)
-    if exit == True:
+    if exit:
         sys.exit(0)
 
     molecules = molecules.split(',')
@@ -378,7 +377,7 @@ def isodist(molecules, charges=0, output='', plot=False, sigma=0.35, resolution=
         if verbose:
             print (
                 'The mass of %(substance)s is %(Mass)f and the calculated charge is %(Charge)d with m/z of %(Mz)f.' % {
-                    'substance': \
+                    'substance':
                         element, 'Mass': molmass(element), 'Charge': molcharge(element),
                     'Mz': mz(molmass(element), molcharge(element), charges)})
 
@@ -406,19 +405,18 @@ def isodist(molecules, charges=0, output='', plot=False, sigma=0.35, resolution=
     else:
         mz_idx = sorted(final.keys())
         ms_output.add_centroids(mz_idx, [final[f] for f in mz_idx])
-    if plot == True:
+    if plot:
         import matplotlib.pyplot as plt  # for plotting
         plt.plot(xvector, yvector)
         plt.plot(mz_list, intensity_list, 'rx')
         plt.show()
 
-    if save == True:
-        g = open(savefile, 'w')
-        xs = xvector.tolist()
-        ys = yvector.tolist()
-        for i in range(0, len(xs)):
-            g.write(str(xs[i]) + "\t" + str(ys[i]) + "\n")
-        g.close
+    if save:
+        with open(output, 'w') as g:
+            xs = xvector.tolist()
+            ys = yvector.tolist()
+            for i in range(0, len(xs)):
+                g.write(str(xs[i]) + "\t" + str(ys[i]) + "\n")
     return ms_output
 
 
