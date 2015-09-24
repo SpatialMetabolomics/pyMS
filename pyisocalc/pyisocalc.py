@@ -36,7 +36,7 @@ from ..centroid_detection import gradient
 ver = '0.2 (5 Sep. 2015)'
 
 # values are taken from http://www.ciaaw.org/pubs/TICE-2009.pdf
-PeriodicTable = {
+periodic_table = {
     'H': [1, 1, [1.007825032, 2.014101778], [0.999885, 0.000115]],
     'He': [2, 0, [3.016029319, 4.002603254], [1.34e-06, 0.99999866]],
     'Li': [3, 1, [6.0151223, 7.0160041], [0.0759, 0.9241]],
@@ -173,21 +173,149 @@ PeriodicTable = {
     'Sg': [106, 0, [266.0], [1.0]],
     'Ee': [0, 0, [0.000548597], [1.0]]}
 mass_electron = 0.00054857990924
-FormulaSegment = namedtuple('FormulaSegment', ['atom', 'number'])
+
+
+class Element(object):
+    """
+    An element from the periodic table.
+    """
+    def __init__(self, id):
+        """
+        Initializes an Element given some identifier
+        :param id: Can be either the element symbol as a string,
+        e.g. 'H', 'C', 'Ag' or its atomic number in the periodic table
+        """
+
+        # if element not in periodic_table:
+        #     raise ValueError("%s is not an element from the periodic table."
+        #                      % element)
+        pass
+
+    def name(self):
+        """
+        Return the element symbol as a string.
+        """
+
+        pass
+
+    def charge(self):
+        """
+        Return the atomic charge of this element.
+        :rtype: int
+        """
+
+        pass
+
+    def number(self):
+        """
+        Return the atomic number of this element in the periodic table.
+        :rtype: int
+        """
+
+        pass
+
+    def masses(self):
+        """
+        Return the masses of all possible isotopes in ascending order.
+        :rtype: sequence
+        """
+
+        pass
+
+    def mass_ratios(self):
+        """
+        Return the probability of each isotope, ordered by the isotope's
+        atomic mass.
+        :rtype: sequence
+        """
+
+        pass
+
+    def average_mass(self):
+        """
+
+        :return:
+        """
+
+        masses, ratios = self._element.masses(), self._element.mass_probabilities()
+        atomic_mass = np.dot(masses, ratios)
+        return atomic_mass * self._amount
+
+    def __unicode__(self):
+        return self.name()
+
+    def __repr__(self):
+        return self.__class__.__name__ + "(id='%s')" % self.name()
+
+
+class FormulaSegment(object):
+    """
+    A segment from an expanded molecular sum formula.
+
+    A segment is a single element together with its number of occurrences
+    within a molecule. For example, the molecule 'H20' would consist of the
+    segments ('H', 2) and ('O', 1).
+    """
+    def __init__(self, element, amount):
+        """
+        Create a segment given an element and a number.
+        :param element: an Element object
+        :param amount: a positive non-zero integer
+        """
+        if not isinstance(amount, int):
+            raise TypeError("%s is not an integer." % amount)
+        if not amount > 0:
+            raise ValueError("number must be greater than 0, but is " % amount)
+        self._element = element
+        self._amount = amount
+
+    def element(self):
+        """
+        Return the chemical element.
+        """
+
+        return self._element
+
+    def amount(self):
+        """
+        Return the amount of the element.
+        """
+
+        return self._amount
+
+    def charge(self):
+        """
+        The element's charge multiplied by its amount.
+        """
+        return self._element.charge() * self._amount
+
+    def average_mass(self):
+        """
+        The element's average mass multiplied by its amount.
+        """
+
+        return self._element.average_mass() * self._amount
+
+    def __unicode__(self):
+        return "%s%s" % (self._element, self._amount)
+
+    def __repr__(self):
+        return "FormulaSegment(element=%s, number=%s)" % (repr(self._element),
+                                                          self._amount)
 
 
 #######################################
 # Collect properties
 #######################################
-def get_average_mass(segment):
-    masses, ratios = PeriodicTable[segment.atom][2:4]
-    atomic_mass = np.dot(masses, ratios)
-    return atomic_mass * segment.number
+# def get_average_mass(segment):
+#     masses, ratios = periodic_table[segment.element][2:4]
+#     atomic_mass = np.dot(masses, ratios)
+#     return atomic_mass * segment.number
 
 
-def get_charge(segment):
-    atomic_charge = PeriodicTable[segment.atom][1]
-    return atomic_charge * segment.number
+# def get_charge(segment):
+#     atomic_charge = periodic_table[segment.element][1]
+#     return atomic_charge * segment.number
 
 
 #####################################################
@@ -243,7 +371,7 @@ def single_element_pattern(segment, threshold=1e-9):
     # see 'Efficient Calculation of Exact Fine Structure Isotope Patterns via the
     #      Multidimensional Fourier Transform' (A. Ipsen, 2014)
     element, amount = segment.atom, segment.number
-    iso_mass, iso_abundance = map(np.array, PeriodicTable[element][2:4])
+    iso_mass, iso_abundance = map(np.array, periodic_table[element][2:4])
     if len(iso_abundance) == 1:
         return np.array([1.0]), iso_mass * amount
     if amount == 1:
