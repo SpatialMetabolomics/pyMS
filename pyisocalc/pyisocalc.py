@@ -340,20 +340,21 @@ class SumFormula(object):
         Return the sequence of segments of which this sum formula consists.
         :rtype: tuple
         """
-        return list(self._segments)
+        return self._segments
 
     def average_mass(self):
         """
         The sum of the average masses of its segments.
-        :return:
+        :rtype: float
         """
-        pass
+        return sum(map(lambda x: x.average_mass(), self._segments))
 
     def charge(self):
         """
         The sum of the charges of its segments.
+        :rtype: int
         """
-        pass
+        return sum(map(lambda x: x.charge(), self._segments))
 
     def __str__(self):
         return ''.join(str(self._segments))
