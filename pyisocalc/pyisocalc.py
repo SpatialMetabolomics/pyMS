@@ -272,6 +272,7 @@ class FormulaSegment(object):
     within a molecule. For example, the molecule 'H20' would consist of the
     segments ('H', 2) and ('O', 1).
     """
+
     def __init__(self, element, amount):
         """
         Create a segment given an element and a number.
@@ -281,7 +282,7 @@ class FormulaSegment(object):
         if not isinstance(amount, int):
             raise TypeError("%s is not an integer." % amount)
         if not amount > 0:
-            raise ValueError("number must be greater than 0, but is " % amount)
+            raise ValueError("number must be greater than 0, but is %s" % amount)
         self._element = element
         self._amount = amount
 
@@ -289,14 +290,12 @@ class FormulaSegment(object):
         """
         Return the chemical element.
         """
-
         return self._element
 
     def amount(self):
         """
         Return the amount of the element.
         """
-
         return self._amount
 
     def charge(self):
@@ -309,11 +308,13 @@ class FormulaSegment(object):
         """
         The element's average mass multiplied by its amount.
         """
-
         return self._element.average_mass() * self._amount
 
-    def __unicode__(self):
+    def __str__(self):
         return "%s%s" % (self._element, self._amount)
+
+    def __unicode__(self):
+        return self.__str__()
 
     def __repr__(self):
         return "FormulaSegment(element=%s, number=%s)" % (repr(self._element),

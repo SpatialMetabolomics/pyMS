@@ -1,12 +1,11 @@
-from unittest import TestCase
+import unittest
+
 from pyisocalc.pyisocalc import *
 
 __author__ = 'dominik'
 
-import unittest
 
-
-class ElementTest(TestCase):
+class ElementTest(unittest.TestCase):
     def test_init(self):
         valid_args = ('H', 'Ar', 1, 49)
         valueerror_args = ('', 'foo', -45, 2345)
@@ -33,11 +32,6 @@ class FormulaSegmentTest(unittest.TestCase):
         s = FormulaSegment('H', 1)
         self.assertEqual(s.element(), 'H')
         self.assertEqual(s.amount(), 1)
-
-    def test_raise_on_invalid_atom(self):
-        invalid_atoms = ['', 'foo', 'hE']
-        for a in invalid_atoms:
-            self.assertRaises(ValueError, FormulaSegment, a, 1)
 
     def test_raise_on_invalid_number(self):
         invalid_integers = [0, -1]
@@ -91,6 +85,7 @@ class SumFormulaParserTest(unittest.TestCase):
         )
         for i, o in test_cases:
             self.assertSequenceEqual(o, SumFormulaParser.make_segments(i))
+
 
 if __name__ == '__main__':
     unittest.main()
