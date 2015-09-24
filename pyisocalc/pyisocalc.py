@@ -247,6 +247,10 @@ class Element(object):
         """
         return np.dot(self._masses, self._ratios)
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._name == other.name() and self._number == other.number()
+
     def __str__(self):
         return self._name
 
@@ -310,6 +314,10 @@ class FormulaSegment(object):
         """
         return self._element.average_mass() * self._amount
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._element == other.element() and self._amount == other.amount()
+
     def __str__(self):
         return "%s%s" % (self._element, self._amount)
 
@@ -356,6 +364,10 @@ class SumFormula(object):
         """
         return sum(map(lambda x: x.charge(), self._segments))
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self._segments == other.get_segments()
+
     def __str__(self):
         return ''.join(str(self._segments))
 
@@ -370,6 +382,7 @@ class SumFormulaParser(object):
     Alter the parsing behaviour by subclassing and overriding expand() and/or
     make_segments(). parse_string() will just call these two methods in row.
     """
+
     @classmethod
     def parse_string(cls, sf):
         """
@@ -388,48 +401,43 @@ class SumFormulaParser(object):
         :return: A string representing the sum formula in its expanded form.
         :rtype: str
         """
-        pass
+        while len(re.findall('\(\w*\)', sf)) > 0:
+            parenthetical = re.findall('\(\w*\)[0-9]+', sf)
+            for i in parenthetical:
+                p = re.findall('[0-9]+', str(re.findall('\)[0-9]+', i)))
+                j = re.findall('[A-Z][a-z]*[0-9]*', i)
+                for n in range(0, len(j)):
+                    numero = re.findall('[0-9]+', j[n])
+                    if len(numero) != 0:
+                        for k in numero:
+                            nu = re.sub(k, str(int(int(k) * int(p[0]))), j[n])
+                    else:
+                        nu = re.sub(j[n], j[n] + p[0], j[n])
+                    j[n] = nu
+                newphrase = ""
+                for m in j:
+                    newphrase += str(m)
+                sf = sf.replace(i, newphrase)
+            if (len((re.findall('\(\w*\)[0-9]+', sf))) == 0) and (len(re.findall('\(\w*\)', sf)) != 0):
+                sf = sf.replace('(', '')
+                sf = sf.replace(')', '')
+        lopoff = re.findall('[A-Z][a-z]*0', sf)
+        if lopoff:
+            sf = sf.replace(lopoff[0], '')
+        return sf
 
     @classmethod
     def make_segments(cls, expanded):
         """
         Iterates over an expanded formula to create a sequence of segments.
-        :param expanded:
-        :return: A sequence of FormulaSegments
-        :rtype: sequence
+        :param expanded: Sum formula in its expanded string representation
+        :return: An iterator of FormulaSegments
+        :rtype: iterator
         """
-        pass
-
-
-################################################################################
-# expands ((((M)N)O)P)Q to M*N*O*P*Q
-################################################################################
-
-def formula_expander(formula):
-    while len(re.findall('\(\w*\)', formula)) > 0:
-        parenthetical = re.findall('\(\w*\)[0-9]+', formula)
-        for i in parenthetical:
-            p = re.findall('[0-9]+', str(re.findall('\)[0-9]+', i)))
-            j = re.findall('[A-Z][a-z]*[0-9]*', i)
-            for n in range(0, len(j)):
-                numero = re.findall('[0-9]+', j[n])
-                if len(numero) != 0:
-                    for k in numero:
-                        nu = re.sub(k, str(int(int(k) * int(p[0]))), j[n])
-                else:
-                    nu = re.sub(j[n], j[n] + p[0], j[n])
-                j[n] = nu
-            newphrase = ""
-            for m in j:
-                newphrase += str(m)
-            formula = formula.replace(i, newphrase)
-        if (len((re.findall('\(\w*\)[0-9]+', formula))) == 0) and (len(re.findall('\(\w*\)', formula)) != 0):
-            formula = formula.replace('(', '')
-            formula = formula.replace(')', '')
-    lopoff = re.findall('[A-Z][a-z]*0', formula)
-    if lopoff:
-        formula = formula.replace(lopoff[0], '')
-    return formula
+        segments = re.findall('([A-Z][a-z]*)([0-9]*)', expanded)
+        for atom, number in segments:
+            number = int(number) if number else 1
+            yield FormulaSegment(Element(atom), number)
 
 
 def single_element_pattern(segment, threshold=1e-9):

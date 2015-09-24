@@ -72,7 +72,8 @@ class SumFormulaParserTest(unittest.TestCase):
         test_cases = (
             ('H(NO2)3', 'HN3O6'),
             ('(N)5', 'N5'),
-            ('(((H)2)3)4', 'H24')
+            ('(((H)2)3)4', 'H24'),
+            ('H2O', 'H2O')
         )
         for i, o in test_cases:
             self.assertEqual(o, SumFormulaParser.expand(i))
@@ -84,7 +85,7 @@ class SumFormulaParserTest(unittest.TestCase):
                 'O'), 1)])
         )
         for i, o in test_cases:
-            self.assertSequenceEqual(o, SumFormulaParser.make_segments(i))
+            self.assertSequenceEqual(o, list(SumFormulaParser.make_segments(i)))
 
 
 if __name__ == '__main__':
