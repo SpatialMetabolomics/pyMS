@@ -304,36 +304,83 @@ class FormulaSegment(object):
                                                           self._amount)
 
 
-#######################################
-# Collect properties
-#######################################
-# def get_average_mass(segment):
-#     masses, ratios = periodic_table[segment.element][2:4]
-#     atomic_mass = np.dot(masses, ratios)
-#     return atomic_mass * segment.number
+class SumFormula(object):
+    """
+    A molecular sum formula, built up from FormulaSegments. Use SumFormulaParser
+    to parse your string representation into a SumFormula object.
+
+    To get the expanded string representation of this object, use str().
+    """
+
+    def __init__(self, segments):
+        """
+        :param segments: sequence of FormulaSegments
+        """
+        self._segments = tuple(segments)
+
+    def get_segments(self):
+        """
+        Return the sequence of segments of which this sum formula consists.
+        :rtype: tuple
+        """
+        return list(self._segments)
+
+    def average_mass(self):
+        """
+        The sum of the average masses of its segments.
+        :return:
+        """
+        pass
+
+    def charge(self):
+        """
+        The sum of the charges of its segments.
+        """
+        pass
+
+    def __str__(self):
+        return ''.join(str(self._segments))
+
+    def __unicode__(self):
+        return self.__str__()
 
 
-# def get_charge(segment):
-#     atomic_charge = periodic_table[segment.element][1]
-#     return atomic_charge * segment.number
+class SumFormulaParser(object):
+    """
+    A class to build SumFormula objects from their string representation.
 
+    Alter the parsing behaviour by subclassing and overriding expand() and/or
+    make_segments(). parse_string() will just call these two methods in row.
+    """
+    @classmethod
+    def parse_string(cls, sf):
+        """
+        Convenience method for directly making a SumFormula object from a
+        non-expanded string representation of a sum formula. Internally calls
+        expand() then make_segments().
+        :return: the resulting SumFormula object
+        """
+        return cls.make_segments(cls.expand(sf))
 
-#####################################################
-# Iterate over expanded formula to collect property
-#####################################################
-def get_segments(formula):
-    segments = re.findall('([A-Z][a-z]*)([0-9]*)', formula)
-    for atom, number in segments:
-        number = int(number) if number else 1
-        yield FormulaSegment(atom, number)
+    @classmethod
+    def expand(cls, sf):
+        """
+        Expands ((((M)N)O)P)Q to M*N*O*P*Q. Doesn't do anything if already
+        expanded.
+        :return: A string representing the sum formula in its expanded form.
+        :rtype: str
+        """
+        pass
 
-
-def molmass(formula):
-    return sum(imap(get_average_mass, get_segments(formula)))
-
-
-def molcharge(formula):
-    return sum(imap(get_charge, get_segments(formula)))
+    @classmethod
+    def make_segments(cls, expanded):
+        """
+        Iterates over an expanded formula to create a sequence of segments.
+        :param expanded:
+        :return: A sequence of FormulaSegments
+        :rtype: sequence
+        """
+        pass
 
 
 ################################################################################

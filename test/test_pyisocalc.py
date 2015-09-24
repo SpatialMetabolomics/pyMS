@@ -1,5 +1,5 @@
 from unittest import TestCase
-from pyisocalc.pyisocalc import FormulaSegment, Element, periodic_table
+from pyisocalc.pyisocalc import *
 
 __author__ = 'dominik'
 
@@ -31,8 +31,8 @@ class ElementTest(TestCase):
 class FormulaSegmentTest(unittest.TestCase):
     def test_fields_accessible(self):
         s = FormulaSegment('H', 1)
-        self.assertEqual(s._element, 'H')
-        self.assertEqual(s._amount, 1)
+        self.assertEqual(s.element(), 'H')
+        self.assertEqual(s.amount(), 1)
 
     def test_raise_on_invalid_atom(self):
         invalid_atoms = ['', 'foo', 'hE']
@@ -40,10 +40,57 @@ class FormulaSegmentTest(unittest.TestCase):
             self.assertRaises(ValueError, FormulaSegment, a, 1)
 
     def test_raise_on_invalid_number(self):
-        invalid_numbers = [0, -1, 45.2]
-        for n in invalid_numbers:
+        invalid_integers = [0, -1]
+        for n in invalid_integers:
             self.assertRaises(ValueError, FormulaSegment, 'H', n)
+        non_integers = [45.2, 'foo']
+        for n in non_integers:
+            self.assertRaises(TypeError, FormulaSegment, 'H', n)
 
+
+class SumFormulaTest(unittest.TestCase):
+    def test_segments_are_tuple(self):
+        segments = [1, 2, 3]
+        sf = SumFormula(segments)
+        self.assertIsInstance(sf.get_segments(), tuple)
+        self.assertSequenceEqual(segments, sf.get_segments())
+
+
+class SumFormulaParserTest(unittest.TestCase):
+    def test_expand_raises_on_malformed_string(self):
+        syntactically_invalid_strings = ['()=', 'h2o', '']
+        semantically_invalid_strings = ['ABC', 'FoO', 'Hh20']
+        for s in syntactically_invalid_strings:
+            self.assertRaises(ValueError, SumFormulaParser.expand, s)
+        for s in semantically_invalid_strings:
+            self.assertRaises(ValueError, SumFormulaParser.expand, s)
+
+    def test_make_segments_raises_on_nonexpanded_string(self):
+        syntactically_invalid_strings = ['()=', 'H((H20)3', 'h2o', '',
+                                         'H(NO2)3', 'H-3', 'H0' 'H4.2']
+        semantically_invalid_strings = ['ABC', 'FoO', 'Hh20']
+        for s in syntactically_invalid_strings:
+            self.assertRaises(ValueError, SumFormulaParser.expand, s)
+        for s in semantically_invalid_strings:
+            self.assertRaises(ValueError, SumFormulaParser.expand, s)
+
+    def test_expand(self):
+        test_cases = (
+            ('H(NO2)3', 'HN3O6'),
+            ('(N)5', 'N5'),
+            ('(((H)2)3)4', 'H24')
+        )
+        for i, o in test_cases:
+            self.assertEqual(o, SumFormulaParser.expand(i))
+
+    def test_make_segments(self):
+        test_cases = (
+            ('H', [FormulaSegment(Element('H'), 1)]),
+            ('H2O', [FormulaSegment(Element('H'), 2), FormulaSegment(Element(
+                'O'), 1)])
+        )
+        for i, o in test_cases:
+            self.assertSequenceEqual(o, SumFormulaParser.make_segments(i))
 
 if __name__ == '__main__':
     unittest.main()
