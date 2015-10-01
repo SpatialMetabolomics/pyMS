@@ -250,6 +250,8 @@ class Element(object):
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self._name == other.name() and self._number == other.number()
+        else:
+            return NotImplemented
 
     def __str__(self):
         return self._name
@@ -317,9 +319,14 @@ class FormulaSegment(object):
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self._element == other.element() and self._amount == other.amount()
+        else:
+            return NotImplemented
 
     def __str__(self):
-        return "%s%s" % (self._element, self._amount)
+        if self._amount > 1:
+            return "%s%s" % (self._element, self._amount)
+        else:
+            return str(self._element)
 
     def __unicode__(self):
         return self.__str__()
@@ -367,9 +374,11 @@ class SumFormula(object):
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             return self._segments == other.get_segments()
+        else:
+            return NotImplemented
 
     def __str__(self):
-        return ''.join(str(self._segments))
+        return ''.join(map(str, self._segments))
 
     def __unicode__(self):
         return self.__str__()
