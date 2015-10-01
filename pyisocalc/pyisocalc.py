@@ -228,6 +228,7 @@ class Element(object):
     def masses(self):
         """
         Return the masses of all possible isotopes in ascending order.
+
         :rtype: sequence
         """
         return self._masses
@@ -400,7 +401,7 @@ class SumFormulaParser(object):
         expand() then make_segments().
         :return: the resulting SumFormula object
         """
-        return cls.make_segments(cls.expand(sf))
+        return SumFormula(cls.iter_segments(cls.expand(sf)))
 
     @classmethod
     def expand(cls, sf):
@@ -436,9 +437,10 @@ class SumFormulaParser(object):
         return sf
 
     @classmethod
-    def make_segments(cls, expanded):
+    def iter_segments(cls, expanded):
         """
         Iterates over an expanded formula to create a sequence of segments.
+
         :param expanded: Sum formula in its expanded string representation
         :return: An iterator of FormulaSegments
         :rtype: iterator
