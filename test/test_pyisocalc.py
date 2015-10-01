@@ -119,7 +119,12 @@ class SegmentStub(object):
         return self._number
 
 
-class HStub(object):
+class ElementStub(object):
+    def __getattribute__(self, name):
+        return object.__getattribute__(self, '_data')[name]
+
+
+class HStub(ElementStub):
     def __init__(self):
         self._data = {
             'name': lambda: 'H',
@@ -130,11 +135,8 @@ class HStub(object):
             'average_mass': lambda: 1.00794075382579
         }
 
-    def __getattribute__(self, name):
-        return object.__getattribute__(self, '_data')[name]
 
-
-class OStub(object):
+class OStub(ElementStub):
     def __init__(self):
         self._data = {
             'name': lambda: 'O',
@@ -145,11 +147,8 @@ class OStub(object):
             'average_mass': lambda: 15.9994049262634
         }
 
-    def __getattribute__(self, name):
-        return object.__getattribute__(self, '_data')[name]
 
-
-class FeStub(object):
+class FeStub(ElementStub):
     def __init__(self):
         self._data = {
             'name': lambda: 'Fe',
@@ -159,9 +158,6 @@ class FeStub(object):
             'mass_ratios': lambda: [0.05845, 0.91754, 0.02119, 0.00282],
             'average_mass': lambda: 55.845149918245994
         }
-
-    def __getattribute__(self, name):
-        return object.__getattribute__(self, '_data')[name]
 
 
 if __name__ == '__main__':
