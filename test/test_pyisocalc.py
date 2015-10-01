@@ -1,5 +1,6 @@
 import unittest
 import itertools
+import numpy
 
 from pyisocalc.pyisocalc import *
 
@@ -105,6 +106,19 @@ class SingleElementPatternTest(unittest.TestCase):
 
     def test_raise_on_invalid_threshold(self):
         self.assertRaises(ValueError, single_element_pattern, None, -1)
+
+
+class TrimTest(unittest.TestCase):
+    def test_trim(self):
+        test_cases = (
+            (([1], [1]), ([1.], [1.])),
+            ((range(1000), [1] * 1000), ([499500.], [1.])),
+            (([1, 2, 3, 4, 5, 6], [1, 2, 3, 3, 4, 5]), ([1., 2., 7., 5., 6.], [1., 2., 3., 4., 5.]))
+        )
+        for (i_y, i_x), (expected_y, expected_x) in test_cases:
+            actual_y, actual_x = trim(i_y, i_x)
+            numpy.testing.assert_array_equal(expected_x, actual_x)
+            numpy.testing.assert_array_equal(expected_y, actual_y)
 
 
 class SegmentStub(object):

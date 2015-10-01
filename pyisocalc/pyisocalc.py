@@ -489,10 +489,30 @@ def single_element_pattern(segment, threshold=1e-9):
     return res
 
 
-def trim(ry, my):
-    my, inv = np.unique(my, return_inverse=True)
-    ry = np.bincount(inv, weights=ry)
-    return ry, my
+def trim(y, x):
+    """
+    .. py:function:: trim(y, x)
+
+    Remove duplicate elements in the first array and sum the duplicate values in the second one.
+    This function returns an array containing the unique values from x and an array containing the values from y
+    where its elements at the indexes of the duplicate elements in x have been summed.
+
+    Example:
+
+    .. code::
+    >>> trim([5, 1, 2, 5], [1, 2, 2, 3])
+    (array([ 5.,  3.,  5.]), array([1, 2, 3]))
+
+    :param y: the array from which the values are summed
+    :type y: Union[ndarray, Iterable]
+    :param x: the array from which the duplicates are removed
+    :type x: Union[ndarray, Iterable]
+    :return: the trimmed y array and the trimmed x array
+    :rtype: Tuple[ndarray]
+    """
+    x, inv = np.unique(x, return_inverse=True)
+    y = np.bincount(inv, weights=y)
+    return y, x
 
 
 def cartesian(rx, mx, cutoff):
