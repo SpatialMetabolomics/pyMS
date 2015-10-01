@@ -450,14 +450,31 @@ class SumFormulaParser(object):
 
 
 def single_element_pattern(segment, threshold=1e-9):
-    # see 'Efficient Calculation of Exact Fine Structure Isotope Patterns via the
-    #      Multidimensional Fourier Transform' (A. Ipsen, 2014)
-    element, amount = segment.atom, segment.number
-    iso_mass, iso_abundance = map(np.array, periodic_table[element][2:4])
+    """
+    .. py:function:: single_element_pattern(segment, [threshold=1e-9])
+
+    Calculates the isotope pattern of a single FormulaSegment.
+
+    See 'Efficient Calculation of Exact Fine Structure Isotope Patterns via the
+    Multidimensional Fourier Transform' (A. Ipsen, 2014).
+
+    :type segment: FormulaSegment
+    :param threshold: Only intensities above this threshold will be part of the result. Must be a non-negative number
+    :type threshold: float
+    :return: the isotopic pattern as a MassSpectrum
+    :rtype: MassSpectrum
+    """
+    if threshold < 0:
+        raise ValueError("threshold cannot be negative")
+    element, amount = segment.element(), segment.amount()
+    iso_mass, iso_abundance = np.asarray(element.masses()), np.asarray(element.mass_ratios())
+    res = MassSpectrum()
     if len(iso_abundance) == 1:
-        return np.array([1.0]), iso_mass * amount
+        res.add_spectrum(np.array([1.0]), iso_mass * amount)
+        return res
     if amount == 1:
-        return iso_abundance, iso_mass
+        res.add_spectrum(iso_abundance, iso_mass)
+        return res
     dim = len(iso_abundance) - 1
     abundance = np.zeros([amount + 1] * dim)
     abundance.flat[0] = iso_abundance[0]
@@ -466,7 +483,8 @@ def single_element_pattern(segment, threshold=1e-9):
     significant = np.where(abundance > threshold)
     intensities = abundance[significant]
     masses = amount * iso_mass[0] + (iso_mass[1:] - iso_mass[0]).dot(significant)
-    return intensities, masses
+    res.add_spectrum(masses, intensities)
+    return res
 
 
 def trim(ry, my):
