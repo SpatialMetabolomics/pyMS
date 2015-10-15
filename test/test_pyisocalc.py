@@ -3,8 +3,36 @@ import itertools
 import numpy
 
 from pyisocalc.pyisocalc import *
+from test.common import SimpleMock
 
 __author__ = 'dominik'
+
+element_stubs = {
+    'O': SimpleMock({
+        'name': lambda: 'O',
+        'charge': lambda: -2,
+        'number': lambda: 8,
+        'masses': lambda: [15.99491462, 16.9991315, 17.9991604],
+        'mass_ratios': lambda: [0.99757, 0.00038, 0.00205],
+        'average_mass': lambda: 15.9994049262634
+    }),
+    'H': SimpleMock({
+        'name': lambda: 'H',
+        'charge': lambda: 1,
+        'number': lambda: 1,
+        'masses': lambda: [1.007825032, 2.014101778],
+        'mass_ratios': lambda: [0.999885, 0.000115],
+        'average_mass': lambda: 1.00794075382579
+    }),
+    'Fe': SimpleMock({
+        'name': lambda: 'Fe',
+        'charge': lambda: 3,
+        'number': lambda: 26,
+        'masses': lambda: [53.9396147, 55.9349418, 56.9353983, 57.9332801],
+        'mass_ratios': lambda: [0.05845, 0.91754, 0.02119, 0.00282],
+        'average_mass': lambda: 55.845149918245994
+    })
+}
 
 
 class ElementTest(unittest.TestCase):
@@ -93,9 +121,9 @@ class SumFormulaParserTest(unittest.TestCase):
 class SingleElementPatternTest(unittest.TestCase):
     def test_single_element_pattern(self):
         segments = (
-            SegmentStub(HStub(), 1),
-            SegmentStub(OStub(), 9),
-            SegmentStub(FeStub(), 348)
+            SegmentStub(element_stubs['H'], 1),
+            SegmentStub(element_stubs['O'], 9),
+            SegmentStub(element_stubs['Fe'], 348)
         )
         thresholds = (0, 1e-9, 1e-27, 1, 1e27)
         for s, th in itertools.product(segments, thresholds):
@@ -131,47 +159,6 @@ class SegmentStub(object):
 
     def amount(self):
         return self._number
-
-
-class ElementStub(object):
-    def __getattribute__(self, name):
-        return object.__getattribute__(self, '_data')[name]
-
-
-class HStub(ElementStub):
-    def __init__(self):
-        self._data = {
-            'name': lambda: 'H',
-            'charge': lambda: 1,
-            'number': lambda: 1,
-            'masses': lambda: [1.007825032, 2.014101778],
-            'mass_ratios': lambda: [0.999885, 0.000115],
-            'average_mass': lambda: 1.00794075382579
-        }
-
-
-class OStub(ElementStub):
-    def __init__(self):
-        self._data = {
-            'name': lambda: 'O',
-            'charge': lambda: -2,
-            'number': lambda: 8,
-            'masses': lambda: [15.99491462, 16.9991315, 17.9991604],
-            'mass_ratios': lambda: [0.99757, 0.00038, 0.00205],
-            'average_mass': lambda: 15.9994049262634
-        }
-
-
-class FeStub(ElementStub):
-    def __init__(self):
-        self._data = {
-            'name': lambda: 'Fe',
-            'charge': lambda: 3,
-            'number': lambda: 26,
-            'masses': lambda: [53.9396147, 55.9349418, 56.9353983, 57.9332801],
-            'mass_ratios': lambda: [0.05845, 0.91754, 0.02119, 0.00282],
-            'average_mass': lambda: 55.845149918245994
-        }
 
 
 if __name__ == '__main__':

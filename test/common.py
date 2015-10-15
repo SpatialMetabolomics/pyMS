@@ -51,3 +51,15 @@ class MSTestCase(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class SimpleMock(object):
+    """
+    Class for easily mocking objects by specifying its attributes as a dict. Each call to __getattribute__ is
+    forwarded to the dict passed in the constructor.
+    """
+    def __init__(self, attrs):
+        self._attrs = attrs
+
+    def __getattribute__(self, name):
+        return object.__getattribute__(self, '_attrs')[name]
