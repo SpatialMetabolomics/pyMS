@@ -1,5 +1,8 @@
+import json
+import os
 import unittest
 import itertools
+
 import numpy
 
 from pyisocalc.pyisocalc import *
@@ -147,6 +150,54 @@ class TrimTest(unittest.TestCase):
             actual_y, actual_x = trim(i_y, i_x)
             numpy.testing.assert_array_equal(expected_x, actual_x)
             numpy.testing.assert_array_equal(expected_y, actual_y)
+
+
+class IsodistTest(unittest.TestCase):
+    def setUp(self):
+        self.sf_stubs = {
+            'H2O': SimpleMock({
+                'get_segments': lambda: [SegmentStub(element_stubs['H'], 2), SegmentStub(element_stubs['O'], 1)],
+                'charge': lambda: 0
+            }),
+            'H': SimpleMock({
+                'get_segments': lambda: [SegmentStub(element_stubs['H'], 1)],
+                'charge': lambda: 1
+            }),
+            'Fe100H89O10': SimpleMock({
+                'get_segments': lambda: [SegmentStub(element_stubs['Fe'], 100), SegmentStub(element_stubs['H'],
+                                                                                            89),
+                                         SegmentStub(element_stubs['O'], 10)],
+                'charge': lambda: 369
+            })
+        }
+        self.sf_reference_values = {}
+        for sf_str in self.sf_stubs:
+            with open(os.path.join(os.path.dirname(__file__), 'pyisocalc_isodist_refdata_%s.json' % sf_str),
+                      'r') as result_fp:
+                res_dict = json.load(result_fp)
+                self.sf_reference_values[sf_str] = res_dict
+
+    def test_top_n_peaks(self):
+        for sf_str in self.sf_stubs:
+            sf_stub = self.sf_stubs[sf_str]
+            reference_values = self.sf_reference_values[sf_str]
+
+            actual_masses, actual_ratios = isodist(sf_stub, cutoff=0.00001).get_spectrum()
+            expected_masses, expected_ratios = numpy.asarray(reference_values['mzs']), np.asarray(reference_values[
+                                                                                                      'ints'])
+            top10actual_masses, top10actual_ratios = self._top_n(actual_masses, actual_ratios, n=10)
+            top10expected_masses, top10expected_ratios = self._top_n(expected_masses, expected_ratios, n=10)
+
+            np.testing.assert_array_almost_equal(top10actual_masses, top10expected_masses, decimal=3)
+            np.testing.assert_array_almost_equal(top10actual_ratios, top10expected_ratios, decimal=3)
+
+    @staticmethod
+    def _top_n(mzs, ints, n=10):
+        indexes = numpy.argsort(ints)[::-1][:n]
+        return mzs[indexes], ints[indexes]
+
+    def test_functions(self):
+        pass
 
 
 class SegmentStub(object):
