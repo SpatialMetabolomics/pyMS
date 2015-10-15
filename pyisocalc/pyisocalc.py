@@ -575,48 +575,6 @@ def gen_gaussian(final, sigma, pts):
     return xvector, yvector
 
 
-def mz(a, b, c):
-    if c == 0:
-        c = b
-        if b == 0:
-            c = 1
-    mz = a / c
-    return mz
-
-
-def checkhelpcall(sf):
-    print_help = False
-    exit = False
-    if sf == '--help':
-        exit = True
-    if sf == '':
-        print_help = True
-    if print_help:
-        print " "
-        print "\t\tThis is pyisocalc, an isotopic pattern calculator written in python (2.x)."
-        print "\t\tGet the latest version from http://sourceforge.net/p/pyisocalc"
-        print "\t\tThis is version", ver
-        print "\tUsage:"
-        print "\t-h\t--help   \tYou're looking at it."
-        print "\t-f\t--formula\tFormula enclosed in apostrophes, e.g. 'Al2(NO3)4'."
-        print "\t-c\t--charge\tCharge, e.g. -2 or 3. Must be an integer. If not provided the charge will be calculated"
-        print "\t  \t        \tbased on default oxidation states as defined in this file."
-        print "\t-o\t--output\tFilename to save data into. The data will be saved as a tab-separated file. No output " \
-              "by default."
-        print "\t-p\t--plot   \tWhether to plot or not. Can be yes, YES, Yes, Y, y. Default is no."
-        print "\t-g\t--gauss  \tGaussian broadening factor (affects resolution). Default is 0.35. Lower value gives " \
-              "higher resolution."
-        print "\t  \t         \tAdjust this factor to make the spectrum look like the experimentally observed one."
-        print "\t-r\t--resolution\tNumber of points to use for the m/z axis (affects resolution). Default is 500. " \
-              "Higher is slower."
-        print " "
-        print "\t Example:"
-        print "\t./pyisocalc.py -f 'Fe(ClO3)5' -p y -g 0.25 -o ironperchlorate.dat -c -2 -r 250"
-        print ""
-        exit = True
-    return exit
-
-
 def resolution2pts(min_x, max_x, resolution):
     # turn resolving power into ft pts
     # resolution = fwhm/max height
@@ -625,11 +583,6 @@ def resolution2pts(min_x, max_x, resolution):
     return pts
 
 
-def checkoutput(output):
-    save = True
-    if output == '':
-        save = False
-    return save
 
 
 ########
@@ -637,20 +590,10 @@ def checkoutput(output):
 ########
 def isodist(molecules, charges=0, output='', plot=False, sigma=0.35, resolution=250, cutoff=0.0001, do_centroid=True,
             verbose=False):
-    exit = checkhelpcall(molecules)
-    save = checkoutput(output)
-    if exit:
-        sys.exit(0)
 
     molecules = molecules.split(',')
     for element in molecules:
         element = formula_expander(element)
-        if verbose:
-            print (
-                'The mass of %(substance)s is %(Mass)f and the calculated charge is %(Charge)d with m/z of %(Mz)f.' % {
-                    'substance':
-                        element, 'Mass': molmass(element), 'Charge': molcharge(element),
-                    'Mz': mz(molmass(element), molcharge(element), charges)})
 
     segments = list(get_segments(element))
 
@@ -658,9 +601,6 @@ def isodist(molecules, charges=0, output='', plot=False, sigma=0.35, resolution=
         charges = sum(get_charge(x) for x in segments)
         if charges == 0:
             charges = 1
-    else:
-        if verbose:
-            print "Using user-supplied charge of %d for mass spectrum" % charges
 
     ratios, masses = isotopes(segments, cutoff)
     final = gen_dict(masses, ratios, charges, cutoff)
@@ -676,18 +616,6 @@ def isodist(molecules, charges=0, output='', plot=False, sigma=0.35, resolution=
     else:
         mz_idx = sorted(final.keys())
         ms_output.add_centroids(mz_idx, [final[f] for f in mz_idx])
-    if plot:
-        import matplotlib.pyplot as plt  # for plotting
-        plt.plot(xvector, yvector)
-        plt.plot(mz_list, intensity_list, 'rx')
-        plt.show()
-
-    if save:
-        with open(output, 'w') as g:
-            xs = xvector.tolist()
-            ys = yvector.tolist()
-            for i in range(0, len(xs)):
-                g.write(str(xs[i]) + "\t" + str(ys[i]) + "\n")
     return ms_output
 
 
