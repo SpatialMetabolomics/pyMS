@@ -455,7 +455,7 @@ def single_element_pattern(segment, threshold=1e-9):
     """
     .. py:function:: single_element_pattern(segment, [threshold=1e-9])
 
-    Calculates the isotope pattern of a single FormulaSegment.
+    Calculates the isotope pattern of a single FormulaSegment using multidimensional fast fourier transform.
 
     See 'Efficient Calculation of Exact Fine Structure Isotope Patterns via the
     Multidimensional Fourier Transform' (A. Ipsen, 2014).
@@ -493,9 +493,9 @@ def trim(y, x):
     """
     .. py:function:: trim(y, x)
 
-    Remove duplicate elements in the first array and sum the duplicate values in the second one.
-    This function returns an array containing the unique values from x and an array containing the values from y
-    where its elements at the indexes of the duplicate elements in x have been summed.
+    Remove duplicate elements in the second array and sum the duplicate values in the first one.
+    This function returns an array containing the unique values from y and an array containing the values from x
+    where its elements at the indexes of the duplicate elements in y have been summed.
 
     Example:
 
@@ -516,6 +516,19 @@ def trim(y, x):
 
 
 def cartesian(rx, mx, cutoff):
+    """
+    .. py:function:: cartesian(rx, mx, cutoff)
+
+    Combine multiple isotope patterns into a single one.
+
+    :param rx: Sequence of ratio arrays
+    :type rx: Sequence[ndarray]
+    :param mx: Sequence of mass arrays
+    :type mx: Sequence[ndarray]
+    :param cutoff: threshold below which the resulting ratios are filtered out
+    :return: The resulting ratio array and the mass array
+    :rtype: Tuple[ndarray]
+    """
     ry, my = asarray(rx[0]), asarray(mx[0])
     for i in xrange(1, len(rx)):
         newr = np.outer(rx[i], ry).ravel()
@@ -546,6 +559,14 @@ def gen_dict(m, n, charges, cutoff):
 
 
 def gen_gaussian(final, sigma, pts):
+    """
+    Fit an isotope pattern to a gaussian curve.
+
+    :param final: pattern as a dict
+    :return: the smoothed pattern
+    :rtype: Tuple[ndarray]
+    """
+    print pts
     mzs = np.array(final.keys())
     intensities = np.array(final.values())
     xvector = np.linspace(min(mzs) - 1, max(mzs) + 1, pts)
