@@ -21,7 +21,6 @@
 #########################################################################
 from collections import OrderedDict
 import re  # for regular expressions
-import sys
 
 import numpy as np
 from numpy import exp  # misc math functions
@@ -451,9 +450,9 @@ class SumFormulaParser(object):
             yield FormulaSegment(Element(atom), number)
 
 
-def single_element_pattern(segment, threshold=1e-9):
+def single_pattern_fft(segment, threshold=1e-9):
     """
-    .. py:function:: single_element_pattern(segment, [threshold=1e-9])
+    .. py:function:: single_pattern_fft(segment, [threshold=1e-9])
 
     Calculates the isotope pattern of a single FormulaSegment using multidimensional fast fourier transform.
 
@@ -535,27 +534,20 @@ def cartesian(rx, mx, cutoff):
         newm = np.add.outer(mx[i], my).ravel()
         js = np.where(newr > cutoff)[0]
         ry, my = newr[js], newm[js]
-    return trim(ry, my)
-
-
-def isotopes(segments, cutoff):
-    patterns = [single_element_pattern(x, cutoff) for x in segments]
-    ratios = [x[0] for x in patterns]
-    masses = [x[1] for x in patterns]
-    return cartesian(ratios, masses, cutoff)
+    return ry, my
 
 
 ##################################################################################
 # Does housekeeping to generate final intensity ratios and puts it into a dictionary
 ##################################################################################
-def gen_dict(m, n, charges, cutoff):
+def normalize(m, n, charges, cutoff):
     m, n = np.asarray(m).round(8), np.asarray(n).round(8)
     filter = n > cutoff
     m, n = m[filter], n[filter]
     n *= 100.0 / max(n)
     m -= charges * mass_electron
     m /= abs(charges)
-    return dict(zip(m, n))
+    return m, n
 
 
 def gen_gaussian(final, sigma, pts):
@@ -583,40 +575,35 @@ def resolution2pts(min_x, max_x, resolution):
     return pts
 
 
-
-
 ########
 # main function#
 ########
-def isodist(molecules, charges=0, output='', plot=False, sigma=0.35, resolution=250, cutoff=0.0001, do_centroid=True,
-            verbose=False):
+def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft):
+    """
+    Compute the isotope pattern of a molecule given by its sum formula.
 
-    molecules = molecules.split(',')
-    for element in molecules:
-        element = formula_expander(element)
+    First applies single_pattern_func to each segment within the sum formula, then combines these individual patterns
+    into a single one.
 
-    segments = list(get_segments(element))
+    :param sf: the sum formula
+    :type sf: SumFormula
+    :type cutoff: float
+    :param single_pattern_func: the function to compute a single isotope pattern. Must have the same signature as
+    single_pattern_fft
+    :return: the combined isotope pattern as a mass spectrum
+    :rtype: MassSpectrum
+    """
+    single_patterns = (single_pattern_func(segment) for segment in sf.get_segments())
+    pattern_list = list(p.get_spectrum() for p in single_patterns)
+    single_pattern_masses, single_pattern_ratios = zip(*pattern_list)
+    combined_ratios, combined_masses = trim(*cartesian(single_pattern_ratios, single_pattern_masses, cutoff=cutoff))
+    intensity_filter = combined_ratios > cutoff
+    combined_ratios, combined_masses = combined_ratios[intensity_filter], combined_masses[intensity_filter]
+    normalized_masses, normalized_ratios = normalize(combined_masses, combined_ratios, sf.charge() or 1, cutoff)
+    ms = MassSpectrum()
+    ms.add_spectrum(normalized_masses, normalized_ratios)
+    return ms
 
-    if charges == 0:
-        charges = sum(get_charge(x) for x in segments)
-        if charges == 0:
-            charges = 1
-
-    ratios, masses = isotopes(segments, cutoff)
-    final = gen_dict(masses, ratios, charges, cutoff)
-
-    ms_output = MassSpectrum()
-    if do_centroid:
-        pts = resolution2pts(min(final.keys()), max(final.keys()), resolution)
-        xvector, yvector = gen_gaussian(final, sigma, pts)
-        ms_output.add_spectrum(xvector, yvector)
-        mz_list, intensity_list, centroid_list = gradient(ms_output.get_spectrum()[0], ms_output.get_spectrum()[1],
-                                                          max_output=-1, weighted_bins=5)
-        ms_output.add_centroids(mz_list, intensity_list)
-    else:
-        mz_idx = sorted(final.keys())
-        ms_output.add_centroids(mz_idx, [final[f] for f in mz_idx])
-    return ms_output
 
 
 def str_to_el(str_in):

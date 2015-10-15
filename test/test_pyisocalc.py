@@ -130,13 +130,13 @@ class SingleElementPatternTest(unittest.TestCase):
         )
         thresholds = (0, 1e-9, 1e-27, 1, 1e27)
         for s, th in itertools.product(segments, thresholds):
-            ms = single_element_pattern(s, th)
+            ms = single_pattern_fft(s, th)
             nzs, ints = ms.get_spectrum()
             for i in ints:
                 self.assertGreaterEqual(i, th)
 
     def test_raise_on_invalid_threshold(self):
-        self.assertRaises(ValueError, single_element_pattern, None, -1)
+        self.assertRaises(ValueError, single_pattern_fft, None, -1)
 
 
 class TrimTest(unittest.TestCase):
@@ -164,8 +164,7 @@ class IsodistTest(unittest.TestCase):
                 'charge': lambda: 1
             }),
             'Fe100H89O10': SimpleMock({
-                'get_segments': lambda: [SegmentStub(element_stubs['Fe'], 100), SegmentStub(element_stubs['H'],
-                                                                                            89),
+                'get_segments': lambda: [SegmentStub(element_stubs['Fe'], 100), SegmentStub(element_stubs['H'], 89),
                                          SegmentStub(element_stubs['O'], 10)],
                 'charge': lambda: 369
             })
