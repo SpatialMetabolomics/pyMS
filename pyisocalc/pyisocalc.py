@@ -474,7 +474,7 @@ def single_pattern_fft(segment, threshold=1e-9):
         res.add_spectrum(np.array([1.0]), iso_mass * amount)
         return res
     if amount == 1:
-        res.add_spectrum(iso_abundance, iso_mass)
+        res.add_spectrum(iso_mass, iso_abundance)
         return res
     dim = len(iso_abundance) - 1
     abundance = np.zeros([amount + 1] * dim)
@@ -571,7 +571,7 @@ def resolution2pts(min_x, max_x, resolution):
     # turn resolving power into ft pts
     # resolution = fwhm/max height
     # turn resolution in points per mz then multipy by mz range
-    pts = resolution / 1000 * (max(max_x - min_x, 1))
+    pts = max(int(resolution / 1000. * (max_x - min_x)), 1)
     return pts
 
 
