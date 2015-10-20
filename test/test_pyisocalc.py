@@ -224,6 +224,24 @@ class TestTranslateFwhm(unittest.TestCase):
             self.assertRaises(ValueError, translate_fwhm, mi, ma, fwhm, ppfwhm)
 
 
+class TestGenGaussian(unittest.TestCase):
+    def setUp(self):
+        self.ms_stub = SimpleMock({'get_spectrum': lambda: (np.array([1., 2.]), np.array([50., 100.]))})
+
+    def test_raises_errors(self):
+        test_cases = (
+            ((self.ms_stub, -1, 10), ValueError),
+            ((self.ms_stub, 0, 10), ValueError),
+            ((self.ms_stub, 10, 0), ValueError),
+            ((self.ms_stub, 0, 0), ValueError),
+            ((self.ms_stub, -1, 10), ValueError),
+            ((self.ms_stub, 1, -3), ValueError),
+            ((self.ms_stub, 1, 10.), TypeError),
+        )
+        for (ms, sigma, pts), e in test_cases:
+            self.assertRaises(e, gen_gaussian, ms, sigma, pts)
+
+
 class SegmentStub(object):
     def __init__(self, atom, number):
         self._atom = atom

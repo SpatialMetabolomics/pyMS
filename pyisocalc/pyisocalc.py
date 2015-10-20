@@ -550,17 +550,21 @@ def normalize(m, n, charges, cutoff):
     return m, n
 
 
-def gen_gaussian(final, sigma, pts):
+def gen_gaussian(ms, sigma, pts):
     """
     Fit an isotope pattern to a gaussian curve.
 
-    :param final: pattern as a dict
+    :param ms: the isotope pattern as a MassSpectrum object
     :return: the smoothed pattern
     :rtype: Tuple[ndarray]
+    :throws ValueError: if sigma or pts are not greater than 0
+    :throws TypeError: if pts is not an integer
     """
-    print pts
-    mzs = np.array(final.keys())
-    intensities = np.array(final.values())
+    if not isinstance(pts, int):
+        raise TypeError("pts must be an integer")
+    if min(sigma, pts) <= 0:
+        raise ValueError("sigma and pts must be greater than 0")
+    mzs, intensities = ms.get_spectrum()
     xvector = np.linspace(min(mzs) - 1, max(mzs) + 1, pts)
     yvector = intensities.dot(exp(-0.5 * (np.add.outer(mzs, -xvector) / sigma) ** 2))
     yvector *= 100.0 / max(yvector)
