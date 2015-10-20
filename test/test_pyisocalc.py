@@ -199,6 +199,31 @@ class IsodistTest(unittest.TestCase):
         pass
 
 
+class TestTranslateFwhm(unittest.TestCase):
+    def test_valid_inputs(self):
+        test_cases = (
+            ((1, 11, 1., 2), (20, 0.42466090014400956)),
+            ((492.7, 5178.3, 0.001, 25), (117140000, 0.00042466090014400956)),
+        )
+        for i, (expected_pts, expected_sigma) in test_cases:
+            actual_pts, actual_sigma = translate_fwhm(*i)
+            self.assertEqual(expected_pts, actual_pts)
+            self.assertAlmostEqual(expected_sigma, actual_sigma, delta=1e-5)
+
+    def test_raises_valueerror(self):
+        invalid_inputs = (
+            # min > max
+            (5, 4, 1., 1),
+            # <= 0 values
+            (0, 0, 0., 0),
+            (-3, 27, 0.01, 10),
+            (3, 27, -0.01, 10),
+            (3, 27, 0.01, -10)
+        )
+        for mi, ma, fwhm, ppfwhm in invalid_inputs:
+            self.assertRaises(ValueError, translate_fwhm, mi, ma, fwhm, ppfwhm)
+
+
 class SegmentStub(object):
     def __init__(self, atom, number):
         self._atom = atom

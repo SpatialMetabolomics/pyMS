@@ -567,12 +567,27 @@ def gen_gaussian(final, sigma, pts):
     return xvector, yvector
 
 
-def resolution2pts(min_x, max_x, resolution):
-    # turn resolving power into ft pts
-    # resolution = fwhm/max height
-    # turn resolution in points per mz then multipy by mz range
-    pts = max(int(resolution / 1000. * (max_x - min_x)), 1)
-    return pts
+def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
+    """
+    Calculate the number of points for the regular grid based on the full width at half maximum.
+
+    When fitting an isotope pattern to a gaussian distribution, this function calculates both the number of points of
+    which the grid will consist and the standard deviation sigma for the gaussian distribution.
+
+    :param min_x: the lowest m/z value
+    :param max_x: the highest m/z value
+    :param fwhm: the full width at half maximum
+    :param points_per_fwhm: number of points per fwhm
+    :return: A tuple of two numbers: the number of points and sigma
+    :rtype: Tuple[int, float]
+    """
+    if min_x > max_x:
+        raise ValueError("min_x > max_x")
+    if min(min_x, max_x, fwhm, points_per_fwhm) <= 0:
+        raise ValueError("all inputs must be greater than 0")
+    pts = int((max_x - min_x) * points_per_fwhm / float(fwhm))
+    sigma = fwhm / 2.3548200450309493  # approximation of 2*sqrt(2*ln2)
+    return pts, sigma
 
 
 ########
