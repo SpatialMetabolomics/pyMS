@@ -4,6 +4,7 @@ import unittest
 import itertools
 
 import numpy
+import scipy.stats
 
 from pyisocalc.pyisocalc import *
 from test.common import SimpleMock
@@ -36,6 +37,28 @@ element_stubs = {
         'average_mass': lambda: 55.845149918245994
     })
 }
+
+sf_stubs = {
+    'H2O': SimpleMock({
+        'get_segments': lambda: [SegmentStub(element_stubs['H'], 2), SegmentStub(element_stubs['O'], 1)],
+        'charge': lambda: 0
+    }),
+    'H': SimpleMock({
+        'get_segments': lambda: [SegmentStub(element_stubs['H'], 1)],
+        'charge': lambda: 1
+    }),
+    'Fe100H89O10': SimpleMock({
+        'get_segments': lambda: [SegmentStub(element_stubs['Fe'], 100), SegmentStub(element_stubs['H'], 89),
+                                 SegmentStub(element_stubs['O'], 10)],
+        'charge': lambda: 369
+    })
+}
+
+chemcalc_ref_values = {}
+for sf_str in sf_stubs:
+    with open(os.path.join(os.path.dirname(__file__), 'pyisocalc_isodist_refdata_%s.json' % sf_str), 'r') as result_fp:
+        res_dict = json.load(result_fp)
+        chemcalc_ref_values[sf_str] = res_dict
 
 
 class ElementTest(unittest.TestCase):
@@ -153,33 +176,10 @@ class TrimTest(unittest.TestCase):
 
 
 class IsodistTest(unittest.TestCase):
-    def setUp(self):
-        self.sf_stubs = {
-            'H2O': SimpleMock({
-                'get_segments': lambda: [SegmentStub(element_stubs['H'], 2), SegmentStub(element_stubs['O'], 1)],
-                'charge': lambda: 0
-            }),
-            'H': SimpleMock({
-                'get_segments': lambda: [SegmentStub(element_stubs['H'], 1)],
-                'charge': lambda: 1
-            }),
-            'Fe100H89O10': SimpleMock({
-                'get_segments': lambda: [SegmentStub(element_stubs['Fe'], 100), SegmentStub(element_stubs['H'], 89),
-                                         SegmentStub(element_stubs['O'], 10)],
-                'charge': lambda: 369
-            })
-        }
-        self.sf_reference_values = {}
-        for sf_str in self.sf_stubs:
-            with open(os.path.join(os.path.dirname(__file__), 'pyisocalc_isodist_refdata_%s.json' % sf_str),
-                      'r') as result_fp:
-                res_dict = json.load(result_fp)
-                self.sf_reference_values[sf_str] = res_dict
-
     def test_top_n_peaks(self):
-        for sf_str in self.sf_stubs:
-            sf_stub = self.sf_stubs[sf_str]
-            reference_values = self.sf_reference_values[sf_str]
+        for sf_str in sf_stubs:
+            sf_stub = sf_stubs[sf_str]
+            reference_values = chemcalc_ref_values[sf_str]
 
             actual_masses, actual_ratios = isodist(sf_stub, cutoff=0.00001).get_spectrum()
             expected_masses, expected_ratios = numpy.asarray(reference_values['mzs']), np.asarray(reference_values[
@@ -240,6 +240,41 @@ class TestGenGaussian(unittest.TestCase):
         )
         for (ms, sigma, pts), e in test_cases:
             self.assertRaises(e, gen_gaussian, ms, sigma, pts)
+
+    def test_valid_inputs(self):
+        regular_cases = (
+            (self.ms_stub, 1, 2),
+            (self.ms_stub, 1, 3000),
+            (self.ms_stub, 0.42466, 3000),
+            (self.ms_stub, 3e20, int(1e7)),
+        )
+        chemcalc_results = []
+        for d in chemcalc_ref_values.values():
+            ms = SimpleMock({'get_spectrum': lambda: (np.array(d['mzs']), np.array(d['ints']))})
+            chemcalc_results.append(ms)
+        sigmas = [1e-20, 3e20]
+        pts = [1, int(1e6)]
+        generated_cases = itertools.product(chemcalc_results, sigmas, pts)
+        for ms, sig, pts in itertools.chain(regular_cases, generated_cases):
+            input_mzs, input_ints = ms.get_spectrum()
+            expected_mzs, expected_ints = combinded_gaussian(input_mzs, input_ints, sig, pts)
+            actual_mzs, actual_ints = gen_gaussian(ms, sig, pts)
+            np.testing.assert_array_almost_equal(expected_mzs, actual_mzs, decimal=5)
+            np.testing.assert_array_almost_equal(expected_ints, actual_ints, decimal=5)
+
+
+def single_gaussian(x, mu, sig):
+    # using trustable scipy implementation
+    f = scipy.stats.norm(loc=mu, scale=sig).pdf
+    distr = f(x) / f(mu)
+    return distr
+
+
+def combinded_gaussian(mzs, ints, sig, pts):
+    # slow alternative to gen_gaussian to create reference values for it
+    # creates a gaussian curve for each peak on the whole grid, then sums them up
+    grid = np.linspace(min(mzs) - 1, max(mzs) + 1, pts)
+    return grid, sum(i * single_gaussian(grid, mu, sig) for mu, i in zip(mzs, ints))
 
 
 class SegmentStub(object):

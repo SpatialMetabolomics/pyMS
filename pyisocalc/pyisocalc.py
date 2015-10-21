@@ -552,7 +552,11 @@ def normalize(m, n, charges, cutoff):
 
 def gen_gaussian(ms, sigma, pts):
     """
-    Fit an isotope pattern to a gaussian curve.
+    Transform each peak in an isotope pattern into a gaussian curve.
+
+    Each of the curves is scaled up to the intensity value for the corresponding m/z. The output will be on a regular
+    grid with pts points, starting from min_mz - 1, up to max_mz + 1, where min_mz is the lowest m/z value and max_mz is
+    the highest m/z value. Since each curve is rendered on the same grid, overlapping curves will add up.
 
     :param ms: the isotope pattern as a MassSpectrum object
     :return: the smoothed pattern
@@ -567,7 +571,6 @@ def gen_gaussian(ms, sigma, pts):
     mzs, intensities = ms.get_spectrum()
     xvector = np.linspace(min(mzs) - 1, max(mzs) + 1, pts)
     yvector = intensities.dot(exp(-0.5 * (np.add.outer(mzs, -xvector) / sigma) ** 2))
-    yvector *= 100.0 / max(yvector)
     return xvector, yvector
 
 
@@ -584,6 +587,7 @@ def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
     :param points_per_fwhm: number of points per fwhm
     :return: A tuple of two numbers: the number of points and sigma
     :rtype: Tuple[int, float]
+    :throws ValueError: if min_x > max_x or if not all inputs are greater than 0
     """
     if min_x > max_x:
         raise ValueError("min_x > max_x")
