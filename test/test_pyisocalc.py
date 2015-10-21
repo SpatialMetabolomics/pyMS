@@ -277,6 +277,17 @@ def combinded_gaussian(mzs, ints, sig, pts):
     return grid, sum(i * single_gaussian(grid, mu, sig) for mu, i in zip(mzs, ints))
 
 
+class TestApplyGaussian(unittest.TestCase):
+    def test_raises_valueerror(self):
+        test_cases = (
+            (MassSpectrum(), 0, 0, None),
+            (MassSpectrum(), -1, 10, None),
+            (MassSpectrum(), 2, -0.01, None)
+        )
+        for i in test_cases:
+            self.assertRaises(ValueError, apply_gaussian, *i)
+
+
 class SegmentStub(object):
     def __init__(self, atom, number):
         self._atom = atom

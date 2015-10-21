@@ -628,6 +628,35 @@ def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft):
     return ms
 
 
+def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, centroid_func=gradient, centroid_kwargs=None):
+    """
+    Smooth every peak into a gaussian shape, optionally perform centroid detection.
+
+    :param ms_input: the mass spectrum
+    :type ms_input: MassSpectrum
+    :param fwhm: Full width at half maximum
+    :type fwhm: float
+    :param pts_per_fwhm: Number of points per fwhm for the regular grid
+    :type pts_per_fwhm: int
+    :param centroid_func: the centroid function to apply to the isotope pattern or None if no centroid detection
+    should be performed. Must have the same signature as centroid_detection.gradient.
+    :param centroid_kwargs: dict to pass to centroid_func as optional parameters
+    :return: a new mass spectrum containing the smoothed data in both profile and centroid mode
+    """
+    if min(fwhm, pts_per_fwhm) <= 0:
+        raise ValueError("fwhm and pts_per_fwhm must be greater than 0")
+    input_mzs, input_ints = ms_input.get_spectrum()
+    ms_output = MassSpectrum()
+    pts, sigma = translate_fwhm(min(input_mzs) - 1, max(input_mzs) + 1, fwhm, pts_per_fwhm)
+    gauss_mzs, gauss_ints = gen_gaussian(ms_input, sigma, pts)
+    gauss_ints *= 100.0 / max(gauss_ints)
+    ms_output.add_spectrum(gauss_mzs, gauss_ints)
+    if centroid_func:
+        centroid_kwargs = centroid_kwargs or {'weighted_bins': 5}
+        centroided_mzs, centroided_ints, _ = centroid_func(*ms_output.get_spectrum(), **centroid_kwargs)
+        ms_output.add_centroids(centroided_mzs, centroided_ints)
+    return ms_output
+
 
 def str_to_el(str_in):
     import re
