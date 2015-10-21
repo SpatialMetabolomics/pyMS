@@ -593,7 +593,7 @@ def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
         raise ValueError("min_x > max_x")
     if min(min_x, max_x, fwhm, points_per_fwhm) <= 0:
         raise ValueError("all inputs must be greater than 0")
-    pts = int((max_x - min_x) * points_per_fwhm / float(fwhm))
+    pts = int((max_x - min_x) * points_per_fwhm / float(fwhm)) + 1
     sigma = fwhm / 2.3548200450309493  # approximation of 2*sqrt(2*ln2)
     return pts, sigma
 
