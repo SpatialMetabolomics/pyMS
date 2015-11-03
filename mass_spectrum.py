@@ -7,6 +7,7 @@ class MassSpectrum:
         self._mzs = []
         self._intensities = []
         self._centroids = []
+        self.centroids_intensity = []
 
     ## Private basic spectrum I/O
     def __add_mzs(self, mzs):

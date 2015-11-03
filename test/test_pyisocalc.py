@@ -184,16 +184,11 @@ class IsodistTest(unittest.TestCase):
             actual_masses, actual_ratios = isodist(sf_stub, cutoff=0.00001).get_spectrum()
             expected_masses, expected_ratios = numpy.asarray(reference_values['mzs']), np.asarray(reference_values[
                                                                                                       'ints'])
-            top10actual_masses, top10actual_ratios = self._top_n(actual_masses, actual_ratios, n=10)
-            top10expected_masses, top10expected_ratios = self._top_n(expected_masses, expected_ratios, n=10)
+            top10actual_masses, top10actual_ratios = pick_top_n(actual_masses, actual_ratios, n=10)
+            top10expected_masses, top10expected_ratios = pick_top_n(expected_masses, expected_ratios, n=10)
 
             np.testing.assert_array_almost_equal(top10actual_masses, top10expected_masses, decimal=3)
             np.testing.assert_array_almost_equal(top10actual_ratios, top10expected_ratios, decimal=3)
-
-    @staticmethod
-    def _top_n(mzs, ints, n=10):
-        indexes = numpy.argsort(ints)[::-1][:n]
-        return mzs[indexes], ints[indexes]
 
     def test_functions(self):
         pass
@@ -264,6 +259,11 @@ class TestGenGaussian(unittest.TestCase):
             np.testing.assert_array_almost_equal(expected_ints, actual_ints, decimal=5)
 
 
+def pick_top_n(mzs, ints, n=10):
+    indexes = numpy.argsort(ints)[::-1][:n]
+    return mzs[indexes], ints[indexes]
+
+
 def single_gaussian(x, mu, sig):
     # using trustable scipy implementation
     f = scipy.stats.norm(loc=mu, scale=sig).pdf
@@ -287,6 +287,63 @@ class TestApplyGaussian(unittest.TestCase):
         )
         for i in test_cases:
             self.assertRaises(ValueError, apply_gaussian, *i)
+
+
+    def test_valid_values(self):
+        test_cases = (
+            # small corner cases
+            (
+                SimpleMock({
+                    'get_spectrum': lambda: (np.array([2.]), np.array([100.]))
+                }), 1, {'centroid_func': None}, SimpleMock({
+                    'get_spectrum': lambda source=None: (np.arange(1., 3.1, .1), np.array(
+                        [6.25, 10.5843164, 16.95755409, 25.70284567, 36.85673043, 50., 64.17129488, 77.91645797,
+                         89.50250709, 97.26549474, 100., 97.26549474, 89.50250709, 77.91645797, 64.17129488, 50.,
+                         36.85673043, 25.70284567, 16.95755409, 10.5843164, 6.25])) if not source else ([], [])
+                })
+            ), (
+                SimpleMock({
+                    'get_spectrum': lambda: (np.array([2.]), np.array([100.]))
+                }), 2, {'pts_per_fwhm': 1, 'centroid_func': None}, SimpleMock({
+                    'get_spectrum': lambda source=None: (np.arange(1., 3.1, 2), np.array(
+                        [100., 100.])) if not source else ([], [])
+                })
+            ),
+            # usual value
+            self._usual_case(),
+            # centroid function
+            (
+                SimpleMock({
+                    'get_spectrum': lambda: (np.array([2.]), np.array([100.]))
+                }), 2, {'pts_per_fwhm': 1, 'centroid_func': lambda x, y, **_: (x, 2 * y, [0, 1])}, SimpleMock({
+                    'get_spectrum': lambda source=None: (np.arange(1., 3.1, 2), np.array(
+                        [100., 100.])) if not source else (np.arange(1., 3.1, 2), np.array([200., 200.]))
+                })
+            )
+        )
+
+        for (ms_in, fwhm, kwargs, expected) in test_cases:
+            actual = apply_gaussian(ms_in, fwhm, **kwargs)
+            for ex_p, ex_c, ac_p, ac_c in zip(expected.get_spectrum(), expected.get_spectrum(
+                    'centroids'), actual.get_spectrum(), actual.get_spectrum('centroids')):
+                np.testing.assert_array_almost_equal(ex_p, ac_p, decimal=4)
+                np.testing.assert_array_almost_equal(ex_c, ac_c, decimal=4)
+
+    def _usual_case(self):
+        ms_in = MassSpectrum()
+        ms_out = MassSpectrum()
+        fwhm = 0.01
+        pts_per_fwhm = 15
+        np.random.seed(0)
+        mzs_in = np.sort(np.array([200.] * 10) + np.random.random_sample(10) * 800)
+        np.random.seed()
+        ints_in = scipy.stats.norm(700, 100).pdf(mzs_in)
+        ints_in *= 100 / max(ints_in)
+        ms_in.add_spectrum(mzs_in, ints_in)
+        mzs_out, ints_out = combinded_gaussian(mzs_in, ints_in, 0.004246609001440096, 699266)
+        ints_out *= 100 / max(ints_out)
+        ms_out.add_spectrum(mzs_out, ints_out)
+        return ms_in, fwhm, {'pts_per_fwhm': pts_per_fwhm, 'centroid_func': None}, ms_out
 
 
 class SegmentStub(object):
