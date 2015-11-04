@@ -1,13 +1,11 @@
-import json
-import os
 import unittest
 import itertools
 
 import numpy
 import scipy.stats
 
-from pyisocalc.pyisocalc import *
-from test.common import SimpleMock
+from ..pyisocalc.pyisocalc import *
+from common import load_json_file, SimpleMock, resolve_test_resource
 
 __author__ = 'dominik'
 
@@ -56,9 +54,9 @@ sf_stubs = {
 
 chemcalc_ref_values = {}
 for sf_str in sf_stubs:
-    with open(os.path.join(os.path.dirname(__file__), 'pyisocalc_isodist_refdata_%s.json' % sf_str), 'r') as result_fp:
-        res_dict = json.load(result_fp)
-        chemcalc_ref_values[sf_str] = res_dict
+    fn = resolve_test_resource("pyisocalc", "isodist", sf_str)
+    res_dict = load_json_file(fn)
+    chemcalc_ref_values[sf_str] = res_dict
 
 
 class ElementTest(unittest.TestCase):
@@ -145,18 +143,39 @@ class SumFormulaParserTest(unittest.TestCase):
 
 
 class SingleElementPatternTest(unittest.TestCase):
+    def setUp(self):
+        self.tol = 1e-23
+        self.Fe78_res_dict = load_json_file(resolve_test_resource("pyisocalc", "single_pattern", "Fe78"))
+
     def test_single_element_pattern(self):
         segments = (
             SegmentStub(element_stubs['H'], 1),
             SegmentStub(element_stubs['O'], 9),
-            SegmentStub(element_stubs['Fe'], 348)
+            SegmentStub(element_stubs['Fe'], 78),
         )
         thresholds = (0, 1e-9, 1e-27, 1, 1e27)
         for s, th in itertools.product(segments, thresholds):
             ms = single_pattern_fft(s, th)
-            nzs, ints = ms.get_spectrum()
-            for i in ints:
-                self.assertGreaterEqual(i, th)
+            mzs, ints = ms.get_spectrum()
+            self.assertAlmostEqual(sum(ints), 1. if th < 1 else 0, delta=1e-3)
+            np.testing.assert_array_less(np.repeat(th - self.tol, len(ints)), ints)
+            self.assertEqual(len(mzs), len(ints))
+            np.testing.assert_array_less(np.repeat(0, len(mzs)), mzs)
+
+    def test_Fe78(self):
+        th = 0
+        seg_in = SegmentStub(element_stubs['Fe'], 78)
+        expected_mzs, expected_ints = np.array(self.Fe78_res_dict["mzs"]), np.array(self.Fe78_res_dict["ints"])
+        actual_mzs, actual_ints = single_pattern_fft(seg_in, threshold=th).get_spectrum()
+        self.assertAlmostEqual(sum(actual_ints), 1., delta=1e-3)
+
+        n = min(10, len(actual_mzs), len(expected_mzs))
+        top10_expected_mzs, top10_expected_ints = pick_top_n(expected_mzs, expected_ints, n)
+        top10_actual_mzs, top10_actual_ints = pick_top_n(actual_mzs, actual_ints, n)
+        top10_actual_ints *= 100. / max(top10_actual_ints)
+
+        np.testing.assert_array_almost_equal(top10_expected_mzs, top10_actual_mzs, decimal=3)
+        np.testing.assert_array_almost_equal(top10_expected_ints, top10_actual_ints, decimal=3)
 
     def test_raise_on_invalid_threshold(self):
         self.assertRaises(ValueError, single_pattern_fft, None, -1)
@@ -287,7 +306,6 @@ class TestApplyGaussian(unittest.TestCase):
         )
         for i in test_cases:
             self.assertRaises(ValueError, apply_gaussian, *i)
-
 
     def test_valid_values(self):
         test_cases = (

@@ -1,3 +1,5 @@
+import json
+import os
 import random
 import unittest
 
@@ -49,10 +51,6 @@ class MSTestCase(unittest.TestCase):
             yield (numpy.array(t[0]), numpy.array(t[1]))
 
 
-if __name__ == '__main__':
-    unittest.main()
-
-
 class SimpleMock(object):
     """
     Class for easily mocking objects by specifying its attributes as a dict. Each call to __getattribute__ is
@@ -63,3 +61,18 @@ class SimpleMock(object):
 
     def __getattribute__(self, name):
         return object.__getattribute__(self, '_attrs')[name]
+
+
+def resolve_test_resource(module, name, resource_id):
+    fn = "%(module)s_%(name)s_refdata_%(id)s.json" % {"module": module, "name": name, "id": resource_id}
+    abs_path_to_resource_dir = os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(abs_path_to_resource_dir, fn)
+
+
+def load_json_file(fn):
+    with open(fn, 'r') as fp:
+        return json.load(fp)
+
+
+if __name__ == '__main__':
+    unittest.main()
