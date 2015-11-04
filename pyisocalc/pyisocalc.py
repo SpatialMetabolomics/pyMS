@@ -471,10 +471,11 @@ def single_pattern_fft(segment, threshold=1e-9):
     iso_mass, iso_abundance = np.asarray(element.masses()), np.asarray(element.mass_ratios())
     res = MassSpectrum()
     if len(iso_abundance) == 1:
-        res.add_spectrum(np.array([1.0]), iso_mass * amount)
+        res.add_spectrum(iso_mass * amount, np.array([1.0]))
         return res
     if amount == 1:
-        res.add_spectrum(iso_mass, iso_abundance)
+        significant = np.where(iso_abundance > threshold)
+        res.add_spectrum(iso_mass[significant], iso_abundance[significant])
         return res
     dim = len(iso_abundance) - 1
     abundance = np.zeros([amount + 1] * dim)
