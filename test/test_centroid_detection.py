@@ -3,8 +3,8 @@ import itertools
 
 import numpy
 
-from centroid_detection import gradient
-from test import common
+from ..centroid_detection import gradient
+import common
 
 __author__ = 'Dominik Fay'
 

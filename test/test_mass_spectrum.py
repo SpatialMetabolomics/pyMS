@@ -8,7 +8,7 @@ import unittest
 import numpy
 from numpy.ma.testutils import assert_array_equal
 
-import mass_spectrum
+from .. import mass_spectrum
 
 
 class MassSpectrumTest(unittest.TestCase):
