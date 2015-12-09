@@ -20,22 +20,13 @@ def gradient(mzs,intensities,**opt_args):
     # detect crossing points
     cPoint = MZgrad[0:-1] * MZgrad[1:] <= 0
     mPoint = MZgrad2[0:-1] < 0
-    indices = cPoint & mPoint
     # bool->list of indices
     # Could check left/right of crossing point
-    indices_list_l = np.transpose(np.where(indices == True))
+    indices_list_l = np.where(cPoint & mPoint)[0]
     indices_list_r = indices_list_l + 1
-    intensites_list_l = intensities[indices_list_l]
-    intensites_list_r = intensities[indices_list_r]
-    indices_list = np.zeros((len(intensites_list_l), 1), dtype=int)
-    for ii in range(0, len(intensites_list_l)):
-        if intensites_list_l[ii] > intensites_list_r[ii]:
-            indices_list[ii] = indices_list_l[ii]
-        else:
-            indices_list[ii] = indices_list_r[ii]
-        indices_list = np.unique(np.asarray(indices_list))
-    
-    
+    indices_list = np.where(intensities[indices_list_l] > intensities[indices_list_r],
+                            indices_list_l, indices_list_r)
+    indices_list = np.unique(indices_list)
     
     #Remove any 'peaks' that aren't real
     indices_list = indices_list[intensities[indices_list] > min_intensity]

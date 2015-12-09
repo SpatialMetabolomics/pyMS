@@ -602,7 +602,7 @@ def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
 ########
 # main function#
 ########
-def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft):
+def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=1):
     """
     Compute the isotope pattern of a molecule given by its sum formula.
 
@@ -614,6 +614,8 @@ def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft):
     :type cutoff: float
     :param single_pattern_func: the function to compute a single isotope pattern. Must have the same signature as
     single_pattern_fft
+    :param charge: charge of the molecule
+    :type charge: int
     :return: the combined isotope pattern as a mass spectrum
     :rtype: MassSpectrum
     """
@@ -623,7 +625,7 @@ def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft):
     combined_ratios, combined_masses = trim(*cartesian(single_pattern_ratios, single_pattern_masses, cutoff=cutoff))
     intensity_filter = combined_ratios > cutoff
     combined_ratios, combined_masses = combined_ratios[intensity_filter], combined_masses[intensity_filter]
-    normalized_masses, normalized_ratios = normalize(combined_masses, combined_ratios, sf.charge() or 1, cutoff)
+    normalized_masses, normalized_ratios = normalize(combined_masses, combined_ratios, charge, cutoff)
     ms = MassSpectrum()
     ms.add_spectrum(normalized_masses, normalized_ratios)
     return ms
