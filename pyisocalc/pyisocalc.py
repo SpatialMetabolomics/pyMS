@@ -574,6 +574,32 @@ def gen_gaussian(ms, sigma, pts):
     yvector = intensities.dot(exp(-0.5 * (np.add.outer(mzs, -xvector) / sigma) ** 2))
     return xvector, yvector
 
+def gen_approx_gaussian(ms, sigma, pts, n=20):
+    """
+    Approximate and faster version of gen_gaussian
+
+    :param ms: the isotope pattern as a MassSpectrum object
+    :return: the smoothed pattern
+    :rtype: Tuple[ndarray]
+    :throws ValueError: if sigma or pts are not greater than 0
+    :throws TypeError: if pts is not an integer
+    """
+    if not isinstance(pts, int):
+        raise TypeError("pts must be an integer")
+    if min(sigma, pts) <= 0:
+        raise ValueError("sigma and pts must be greater than 0")
+    mzs, intensities = ms.get_spectrum()
+    mzs = mzs / sigma
+    xvector = np.linspace(min(mzs) - 1.0/sigma, max(mzs) + 1.0/sigma, pts)
+    yvector = np.zeros(xvector.shape)
+    for mz, intensity in zip(mzs, intensities):
+        k = xvector.searchsorted(mz)
+        l = max(k - n, 0)
+        r = min(k + n + 1, len(xvector))
+        yvector[l:r] += intensity * np.exp(-0.5 * (mz - xvector[l:r]) ** 2)
+    return xvector * sigma, yvector
+
+
 
 def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
     """
@@ -631,7 +657,7 @@ def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=1)
     return ms
 
 
-def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, centroid_func=gradient, centroid_kwargs=None):
+def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, exact=True, centroid_func=gradient, centroid_kwargs=None):
     """
     Smooth every peak into a gaussian shape, optionally perform centroid detection.
 
@@ -651,7 +677,10 @@ def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, centroid_func=gradient, cent
     input_mzs, input_ints = ms_input.get_spectrum()
     ms_output = MassSpectrum()
     pts, sigma = translate_fwhm(min(input_mzs) - 1, max(input_mzs) + 1, fwhm, pts_per_fwhm)
-    gauss_mzs, gauss_ints = gen_gaussian(ms_input, sigma, pts)
+    if exact:
+        gauss_mzs, gauss_ints = gen_gaussian(ms_input, sigma, pts)
+    else:
+        gauss_mzs, gauss_ints = gen_approx_gaussian(ms_input, sigma, pts)
     gauss_ints *= 100.0 / max(gauss_ints)
     ms_output.add_spectrum(gauss_mzs, gauss_ints)
     if centroid_func:
