@@ -629,23 +629,24 @@ def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
 ########
 # main function#
 ########
-
-# TODO find a better name
-def wrapper(sf, fwhm, cutoff=0.0001, pts_per_fwhm=10, centroid_func=gradient, centroid_kwargs=None):
+def complete_isodist(sf, fwhm, cutoff=0.0001, charge=None, pts_per_fwhm=10, centroid_func=gradient,
+                     centroid_kwargs=None):
     """
-    Wrapper function for applying isodist, then gen_gaussian and eventually centroid detection.
+    Wrapper function for applying perfect_pattern, then gen_gaussian and eventually centroid detection.
 
     :param sf: the sum formula
     :param fwhm: Full width at half maximum
     :type fwhm: float
     :type cutoff: float
+    :param charge: charge of the molecule
+    :type charge: int
     :param pts_per_fwhm: Number of points per fwhm for the regular grid
     :param centroid_func: the centroid function to apply to the isotope pattern or None if no centroid detection
     should be performed. Must have the same signature as centroid_detection.gradient.
     :param centroid_kwargs: dict to pass to centroid_func as optional parameters
     :return:
     """
-    ms1 = isodist(sf, cutoff)
+    ms1 = perfect_pattern(sf, cutoff, charge=charge)
     ms2 = apply_gaussian(ms1, fwhm, pts_per_fwhm)
     if centroid_func:
         centroid_kwargs = centroid_kwargs or {'weighted_bins': 5}
@@ -654,8 +655,7 @@ def wrapper(sf, fwhm, cutoff=0.0001, pts_per_fwhm=10, centroid_func=gradient, ce
     return ms2
 
 
-# TODO find a better name
-def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=None):
+def perfect_pattern(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=None):
     """
     Compute the isotope pattern of a molecule given by its sum formula.
 

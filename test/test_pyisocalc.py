@@ -54,7 +54,7 @@ sf_stubs = {
 
 chemcalc_ref_values = {}
 for sf_str in sf_stubs:
-    fn = resolve_test_resource("pyisocalc", "isodist", sf_str)
+    fn = resolve_test_resource("pyisocalc", "perfect_pattern", sf_str)
     res_dict = load_json_file(fn)
     chemcalc_ref_values[sf_str] = res_dict
 
@@ -194,13 +194,13 @@ class TrimTest(unittest.TestCase):
             numpy.testing.assert_array_equal(expected_y, actual_y)
 
 
-class IsodistTest(unittest.TestCase):
+class PerfectPatternTest(unittest.TestCase):
     def test_top_n_peaks(self):
         for sf_str in sf_stubs:
             sf_stub = sf_stubs[sf_str]
             reference_values = chemcalc_ref_values[sf_str]
 
-            actual_masses, actual_ratios = isodist(sf_stub, cutoff=0.00001).get_spectrum(source="centroids")
+            actual_masses, actual_ratios = perfect_pattern(sf_stub, cutoff=0.00001).get_spectrum(source="centroids")
             expected_masses, expected_ratios = numpy.asarray(reference_values['mzs']), np.asarray(reference_values[
                                                                                                       'ints'])
             top10actual_masses, top10actual_ratios = pick_top_n(actual_masses, actual_ratios, n=10)
