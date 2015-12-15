@@ -200,7 +200,7 @@ class IsodistTest(unittest.TestCase):
             sf_stub = sf_stubs[sf_str]
             reference_values = chemcalc_ref_values[sf_str]
 
-            actual_masses, actual_ratios = isodist(sf_stub, cutoff=0.00001).get_spectrum()
+            actual_masses, actual_ratios = isodist(sf_stub, cutoff=0.00001).get_spectrum(source="centroids")
             expected_masses, expected_ratios = numpy.asarray(reference_values['mzs']), np.asarray(reference_values[
                                                                                                       'ints'])
             top10actual_masses, top10actual_ratios = pick_top_n(actual_masses, actual_ratios, n=10)
@@ -241,7 +241,7 @@ class TestTranslateFwhm(unittest.TestCase):
 
 class TestGenGaussian(unittest.TestCase):
     def setUp(self):
-        self.ms_stub = SimpleMock({'get_spectrum': lambda: (np.array([1., 2.]), np.array([50., 100.]))})
+        self.ms_stub = SimpleMock({'get_spectrum': lambda source: (np.array([1., 2.]), np.array([50., 100.]))})
 
     def test_raises_errors(self):
         test_cases = (
@@ -265,13 +265,13 @@ class TestGenGaussian(unittest.TestCase):
         )
         chemcalc_results = []
         for d in chemcalc_ref_values.values():
-            ms = SimpleMock({'get_spectrum': lambda: (np.array(d['mzs']), np.array(d['ints']))})
+            ms = SimpleMock({'get_spectrum': lambda source: (np.array(d['mzs']), np.array(d['ints']))})
             chemcalc_results.append(ms)
         sigmas = [1e-20, 3e20]
         pts = [1, int(1e6)]
         generated_cases = itertools.product(chemcalc_results, sigmas, pts)
         for ms, sig, pts in itertools.chain(regular_cases, generated_cases):
-            input_mzs, input_ints = ms.get_spectrum()
+            input_mzs, input_ints = ms.get_spectrum(source="centroids")
             expected_mzs, expected_ints = combinded_gaussian(input_mzs, input_ints, sig, pts)
             actual_mzs, actual_ints = gen_gaussian(ms, sig, pts)
             np.testing.assert_array_almost_equal(expected_mzs, actual_mzs, decimal=5)
@@ -300,9 +300,9 @@ def combinded_gaussian(mzs, ints, sig, pts):
 class TestApplyGaussian(unittest.TestCase):
     def test_raises_valueerror(self):
         test_cases = (
-            (MassSpectrum(), 0, 0, None),
-            (MassSpectrum(), -1, 10, None),
-            (MassSpectrum(), 2, -0.01, None)
+            (MassSpectrum(), 0, 0),
+            (MassSpectrum(), -1, 10),
+            (MassSpectrum(), 2, -0.01),
         )
         for i in test_cases:
             self.assertRaises(ValueError, apply_gaussian, *i)
@@ -312,8 +312,8 @@ class TestApplyGaussian(unittest.TestCase):
             # small corner cases
             (
                 SimpleMock({
-                    'get_spectrum': lambda: (np.array([2.]), np.array([100.]))
-                }), 1, {'centroid_func': None}, SimpleMock({
+                    'get_spectrum': lambda source: (np.array([2.]), np.array([100.]))
+                }), 1, {}, SimpleMock({
                     'get_spectrum': lambda source=None: (np.arange(1., 3.1, .1), np.array(
                         [6.25, 10.5843164, 16.95755409, 25.70284567, 36.85673043, 50., 64.17129488, 77.91645797,
                          89.50250709, 97.26549474, 100., 97.26549474, 89.50250709, 77.91645797, 64.17129488, 50.,
@@ -321,8 +321,8 @@ class TestApplyGaussian(unittest.TestCase):
                 })
             ), (
                 SimpleMock({
-                    'get_spectrum': lambda: (np.array([2.]), np.array([100.]))
-                }), 2, {'pts_per_fwhm': 1, 'centroid_func': None}, SimpleMock({
+                    'get_spectrum': lambda source: (np.array([2.]), np.array([100.]))
+                }), 2, {'pts_per_fwhm': 1}, SimpleMock({
                     'get_spectrum': lambda source=None: (np.arange(1., 3.1, 2), np.array(
                         [100., 100.])) if not source else ([], [])
                 })
@@ -330,14 +330,14 @@ class TestApplyGaussian(unittest.TestCase):
             # usual value
             self._usual_case(),
             # centroid function
-            (
-                SimpleMock({
-                    'get_spectrum': lambda: (np.array([2.]), np.array([100.]))
-                }), 2, {'pts_per_fwhm': 1, 'centroid_func': lambda x, y, **_: (x, 2 * y, [0, 1])}, SimpleMock({
-                    'get_spectrum': lambda source=None: (np.arange(1., 3.1, 2), np.array(
-                        [100., 100.])) if not source else (np.arange(1., 3.1, 2), np.array([200., 200.]))
-                })
-            )
+            # (
+            #     SimpleMock({
+            #         'get_spectrum': lambda: (np.array([2.]), np.array([100.]))
+            #     }), 2, {'pts_per_fwhm': 1, 'centroid_func': lambda x, y, **_: (x, 2 * y, [0, 1])}, SimpleMock({
+            #         'get_spectrum': lambda source=None: (np.arange(1., 3.1, 2), np.array(
+            #             [100., 100.])) if not source else (np.arange(1., 3.1, 2), np.array([200., 200.]))
+            #     })
+            # )
         )
 
         for (ms_in, fwhm, kwargs, expected) in test_cases:
@@ -357,11 +357,11 @@ class TestApplyGaussian(unittest.TestCase):
         np.random.seed()
         ints_in = scipy.stats.norm(700, 100).pdf(mzs_in)
         ints_in *= 100 / max(ints_in)
-        ms_in.add_spectrum(mzs_in, ints_in)
+        ms_in.add_centroids(mzs_in, ints_in)
         mzs_out, ints_out = combinded_gaussian(mzs_in, ints_in, 0.004246609001440096, 699266)
         ints_out *= 100 / max(ints_out)
         ms_out.add_spectrum(mzs_out, ints_out)
-        return ms_in, fwhm, {'pts_per_fwhm': pts_per_fwhm, 'centroid_func': None}, ms_out
+        return ms_in, fwhm, {'pts_per_fwhm': pts_per_fwhm}, ms_out
 
 
 class SegmentStub(object):

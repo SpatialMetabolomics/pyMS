@@ -570,7 +570,7 @@ def gen_gaussian(ms, sigma, pts):
         raise TypeError("pts must be an integer")
     if min(sigma, pts) <= 0:
         raise ValueError("sigma and pts must be greater than 0")
-    mzs, intensities = ms.get_spectrum()
+    mzs, intensities = ms.get_spectrum(source="centroids")
     xvector = np.linspace(min(mzs) - 1, max(mzs) + 1, pts)
     yvector = intensities.dot(exp(-0.5 * (np.add.outer(mzs, -xvector) / sigma) ** 2))
     return xvector, yvector
@@ -629,6 +629,32 @@ def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
 ########
 # main function#
 ########
+
+# TODO find a better name
+def wrapper(sf, fwhm, cutoff=0.0001, pts_per_fwhm=10, centroid_func=gradient, centroid_kwargs=None):
+    """
+    Wrapper function for applying isodist, then gen_gaussian and eventually centroid detection.
+
+    :param sf: the sum formula
+    :param fwhm: Full width at half maximum
+    :type fwhm: float
+    :type cutoff: float
+    :param pts_per_fwhm: Number of points per fwhm for the regular grid
+    :param centroid_func: the centroid function to apply to the isotope pattern or None if no centroid detection
+    should be performed. Must have the same signature as centroid_detection.gradient.
+    :param centroid_kwargs: dict to pass to centroid_func as optional parameters
+    :return:
+    """
+    ms1 = isodist(sf, cutoff)
+    ms2 = apply_gaussian(ms1, fwhm, pts_per_fwhm)
+    if centroid_func:
+        centroid_kwargs = centroid_kwargs or {'weighted_bins': 5}
+        centroided_mzs, centroided_ints, _ = centroid_func(*ms2.get_spectrum(), **centroid_kwargs)
+        ms2.add_centroids(centroided_mzs, centroided_ints)
+    return ms2
+
+
+# TODO find a better name
 def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=None):
     """
     Compute the isotope pattern of a molecule given by its sum formula.
@@ -656,13 +682,13 @@ def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=No
         charge = sf.charge()
     normalized_masses, normalized_ratios = normalize(combined_masses, combined_ratios, charge, cutoff)
     ms = MassSpectrum()
-    ms.add_spectrum(normalized_masses, normalized_ratios)
+    ms.add_centroids(normalized_masses, normalized_ratios)
     return ms
 
 
-def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, exact=True, centroid_func=gradient, centroid_kwargs=None):
+def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, exact=True):
     """
-    Smooth every peak into a gaussian shape, optionally perform centroid detection.
+    Smooth every peak into a gaussian shape using instrument-specific configuration.
 
     :param ms_input: the mass spectrum
     :type ms_input: MassSpectrum
@@ -671,14 +697,11 @@ def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, exact=True, centroid_func=gr
     :param pts_per_fwhm: Number of points per fwhm for the regular grid
     :type pts_per_fwhm: int
     :param exact: if False, this function may use an approximate implementation
-    :param centroid_func: the centroid function to apply to the isotope pattern or None if no centroid detection
-    should be performed. Must have the same signature as centroid_detection.gradient.
-    :param centroid_kwargs: dict to pass to centroid_func as optional parameters
     :return: a new mass spectrum containing the smoothed data in both profile and centroid mode
     """
     if min(fwhm, pts_per_fwhm) <= 0:
         raise ValueError("fwhm and pts_per_fwhm must be greater than 0")
-    input_mzs, input_ints = ms_input.get_spectrum()
+    input_mzs, input_ints = ms_input.get_spectrum(source="centroids")
     ms_output = MassSpectrum()
     pts, sigma = translate_fwhm(min(input_mzs) - 1, max(input_mzs) + 1, fwhm, pts_per_fwhm)
     if exact:
@@ -687,10 +710,6 @@ def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, exact=True, centroid_func=gr
         gauss_mzs, gauss_ints = gen_approx_gaussian(ms_input, sigma, pts)
     gauss_ints *= 100.0 / max(gauss_ints)
     ms_output.add_spectrum(gauss_mzs, gauss_ints)
-    if centroid_func:
-        centroid_kwargs = centroid_kwargs or {'weighted_bins': 5}
-        centroided_mzs, centroided_ints, _ = centroid_func(*ms_output.get_spectrum(), **centroid_kwargs)
-        ms_output.add_centroids(centroided_mzs, centroided_ints)
     return ms_output
 
 
