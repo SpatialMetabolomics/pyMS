@@ -546,8 +546,9 @@ def normalize(m, n, charges, cutoff):
     filter = n > cutoff
     m, n = m[filter], n[filter]
     n *= 100.0 / max(n)
-    m -= charges * mass_electron
-    m /= abs(charges)
+    if charges != 0:
+        m -= charges * mass_electron
+        m /= abs(charges)
     return m, n
 
 
@@ -574,6 +575,7 @@ def gen_gaussian(ms, sigma, pts):
     yvector = intensities.dot(exp(-0.5 * (np.add.outer(mzs, -xvector) / sigma) ** 2))
     return xvector, yvector
 
+
 def gen_approx_gaussian(ms, sigma, pts, n=20):
     """
     Approximate and faster version of gen_gaussian
@@ -598,7 +600,6 @@ def gen_approx_gaussian(ms, sigma, pts, n=20):
         r = min(k + n + 1, len(xvector))
         yvector[l:r] += intensity * np.exp(-0.5 * (mz - xvector[l:r]) ** 2)
     return xvector * sigma, yvector
-
 
 
 def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
@@ -628,7 +629,7 @@ def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
 ########
 # main function#
 ########
-def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=1):
+def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=None):
     """
     Compute the isotope pattern of a molecule given by its sum formula.
 
@@ -651,6 +652,8 @@ def isodist(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=1)
     combined_ratios, combined_masses = trim(*cartesian(single_pattern_ratios, single_pattern_masses, cutoff=cutoff))
     intensity_filter = combined_ratios > cutoff
     combined_ratios, combined_masses = combined_ratios[intensity_filter], combined_masses[intensity_filter]
+    if charge is None:
+        charge = sf.charge()
     normalized_masses, normalized_ratios = normalize(combined_masses, combined_ratios, charge, cutoff)
     ms = MassSpectrum()
     ms.add_spectrum(normalized_masses, normalized_ratios)
@@ -667,6 +670,7 @@ def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, exact=True, centroid_func=gr
     :type fwhm: float
     :param pts_per_fwhm: Number of points per fwhm for the regular grid
     :type pts_per_fwhm: int
+    :param exact: if False, this function may use an approximate implementation
     :param centroid_func: the centroid function to apply to the isotope pattern or None if no centroid detection
     should be performed. Must have the same signature as centroid_detection.gradient.
     :param centroid_kwargs: dict to pass to centroid_func as optional parameters
