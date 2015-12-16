@@ -1,11 +1,11 @@
-import unittest
 import itertools
+import unittest
 
 import numpy
 import scipy.stats
 
-from ..pyisocalc.pyisocalc import *
 from common import load_json_file, SimpleMock, resolve_test_resource
+from ..pyisocalc.pyisocalc import *
 
 __author__ = 'dominik'
 
@@ -200,7 +200,8 @@ class PerfectPatternTest(unittest.TestCase):
             sf_stub = sf_stubs[sf_str]
             reference_values = chemcalc_ref_values[sf_str]
 
-            actual_masses, actual_ratios = perfect_pattern(sf_stub, cutoff=0.00001).get_spectrum(source="centroids")
+            actual_masses, actual_ratios = perfect_pattern(sf_stub, cutoff=0.00001, charge=0).get_spectrum(
+                source="centroids")
             expected_masses, expected_ratios = numpy.asarray(reference_values['mzs']), np.asarray(reference_values[
                                                                                                       'ints'])
             top10actual_masses, top10actual_ratios = pick_top_n(actual_masses, actual_ratios, n=10)
