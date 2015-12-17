@@ -602,52 +602,65 @@ def gen_approx_gaussian(ms, sigma, pts, n=20):
     return xvector * sigma, yvector
 
 
-def translate_fwhm(min_x, max_x, fwhm, points_per_fwhm):
+def total_points(min_x, max_x, points_per_mz):
     """
     Calculate the number of points for the regular grid based on the full width at half maximum.
 
-    When fitting an isotope pattern to a gaussian distribution, this function calculates both the number of points of
-    which the grid will consist and the standard deviation sigma for the gaussian distribution.
+    :param min_x: the lowest m/z value
+    :param max_x: the highest m/z value
+    :param points_per_mz: number of points per fwhm
+    :return: total number of points
+    :rtype: int
+    """
+    if min_x > max_x:
+        raise ValueError("min_x > max_x")
+    if min(min_x, max_x, points_per_mz) <= 0:
+        raise ValueError("all inputs must be greater than 0")
+    return int((max_x - min_x) * points_per_mz) + 1
+
+
+def fwhm_to_sigma(min_x, max_x, fwhm):
+    """
+    When fitting an isotope pattern to a gaussian distribution, this function calculates the standard deviation sigma
+    for the gaussian distribution.
 
     :param min_x: the lowest m/z value
     :param max_x: the highest m/z value
     :param fwhm: the full width at half maximum
-    :param points_per_fwhm: number of points per fwhm
-    :return: A tuple of two numbers: the number of points and sigma
-    :rtype: Tuple[int, float]
+    :return: Sigma
+    :rtype: float
     :throws ValueError: if min_x > max_x or if not all inputs are greater than 0
     """
     if min_x > max_x:
         raise ValueError("min_x > max_x")
-    if min(min_x, max_x, fwhm, points_per_fwhm) <= 0:
+    if min(min_x, max_x, fwhm) <= 0:
         raise ValueError("all inputs must be greater than 0")
-    pts = int((max_x - min_x) * points_per_fwhm / float(fwhm)) + 1
     sigma = fwhm / 2.3548200450309493  # approximation of 2*sqrt(2*ln2)
-    return pts, sigma
+    return sigma
 
 
 ########
 # main function#
 ########
-def complete_isodist(sf, fwhm, cutoff=0.0001, charge=None, pts_per_fwhm=10, centroid_func=gradient,
+def complete_isodist(sf, sigma=0.001, cutoff=0.0001, charge=None, pts_per_mz=10000, centroid_func=gradient,
                      centroid_kwargs=None):
     """
     Wrapper function for applying perfect_pattern, then gen_gaussian and eventually centroid detection.
 
     :param sf: the sum formula
-    :param fwhm: Full width at half maximum
-    :type fwhm: float
+    :param sigma: Full width at half maximum
+    :type sigma: float
     :type cutoff: float
     :param charge: charge of the molecule
     :type charge: int
-    :param pts_per_fwhm: Number of points per fwhm for the regular grid
+    :param pts_per_mz: Number of points per fwhm for the regular grid
     :param centroid_func: the centroid function to apply to the isotope pattern or None if no centroid detection
     should be performed. Must have the same signature as centroid_detection.gradient.
     :param centroid_kwargs: dict to pass to centroid_func as optional parameters
     :return:
     """
     ms1 = perfect_pattern(sf, cutoff, charge=charge)
-    ms2 = apply_gaussian(ms1, fwhm, pts_per_fwhm)
+    ms2 = apply_gaussian(ms1, sigma, pts_per_mz)
     if centroid_func:
         centroid_kwargs = centroid_kwargs or {'weighted_bins': 5}
         centroided_mzs, centroided_ints, _ = centroid_func(*ms2.get_spectrum(), **centroid_kwargs)
@@ -686,24 +699,24 @@ def perfect_pattern(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, c
     return ms
 
 
-def apply_gaussian(ms_input, fwhm, pts_per_fwhm=10, exact=True):
+def apply_gaussian(ms_input, sigma, pts_per_mz=10, exact=True):
     """
     Smooth every peak into a gaussian shape using instrument-specific configuration.
 
     :param ms_input: the mass spectrum
     :type ms_input: MassSpectrum
-    :param fwhm: Full width at half maximum
+    :param sigma: sigma parameter for Gaussian. See fwhm_to_sigma
     :type fwhm: float
-    :param pts_per_fwhm: Number of points per fwhm for the regular grid
-    :type pts_per_fwhm: int
+    :param pts_per_mz: Number of points per one mz unit for the regular grid
+    :type pts_per_mz: int
     :param exact: if False, this function may use an approximate implementation
     :return: a new mass spectrum containing the smoothed data in both profile and centroid mode
     """
-    if min(fwhm, pts_per_fwhm) <= 0:
-        raise ValueError("fwhm and pts_per_fwhm must be greater than 0")
+    if min(sigma, pts_per_mz) <= 0:
+        raise ValueError("sigma and pts_per_mz must be greater than 0")
     input_mzs, input_ints = ms_input.get_spectrum(source="centroids")
     ms_output = MassSpectrum()
-    pts, sigma = translate_fwhm(min(input_mzs) - 1, max(input_mzs) + 1, fwhm, pts_per_fwhm)
+    pts = total_points(min(input_mzs) - 1, max(input_mzs) + 1, pts_per_mz)
     if exact:
         gauss_mzs, gauss_ints = gen_gaussian(ms_input, sigma, pts)
     else:

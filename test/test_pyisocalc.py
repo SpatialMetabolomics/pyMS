@@ -214,30 +214,54 @@ class PerfectPatternTest(unittest.TestCase):
         pass
 
 
-class TestTranslateFwhm(unittest.TestCase):
+class TestTotalPoints(unittest.TestCase):
     def test_valid_inputs(self):
         test_cases = (
-            ((1, 11, 1., 2), (21, 0.42466090014400956)),
-            ((492.7, 5178.3, 0.001, 25), (117140001, 0.00042466090014400956)),
+            ((1, 11, 2), 21),
+            ((492.7, 5178.3, 25), 117141),
             # TODO add real example from ChemCalc
         )
-        for i, (expected_pts, expected_sigma) in test_cases:
-            actual_pts, actual_sigma = translate_fwhm(*i)
+        for (min_x, max_x, points_per_mz), expected_pts in test_cases:
+            actual_pts = total_points(min_x, max_x, points_per_mz)
             self.assertEqual(expected_pts, actual_pts)
+
+    def test_raises_valueerror(self):
+        invalid_inputs = (
+            # min > max
+            (5, 4, 1),
+            # <= 0 values
+            (0, 1, 0),
+            (-3, 27, 10),
+            (-27, -3, 10),
+            (3, 27, -10)
+        )
+        for mi, ma, fwhm in invalid_inputs:
+            self.assertRaises(ValueError, fwhm_to_sigma, mi, ma, fwhm)
+
+
+class TestFwhmToSigma(unittest.TestCase):
+    def test_valid_inputs(self):
+        test_cases = (
+            ((1, 11, 1.), 0.42466090014400956),
+            ((492.7, 5178.3, 0.001), 0.00042466090014400956),
+            # TODO add real example from ChemCalc
+        )
+        for (min_x, max_x, fwhm), expected_sigma in test_cases:
+            actual_sigma = fwhm_to_sigma(min_x, max_x, fwhm)
             self.assertAlmostEqual(expected_sigma, actual_sigma, delta=1e-5)
 
     def test_raises_valueerror(self):
         invalid_inputs = (
             # min > max
-            (5, 4, 1., 1),
+            (5, 4, 1.),
             # <= 0 values
-            (0, 0, 0., 0),
-            (-3, 27, 0.01, 10),
-            (3, 27, -0.01, 10),
-            (3, 27, 0.01, -10)
+            (-3, 27, 0.01),
+            (3, 27, -0.01),
+            (-27, -3, 0.01)
         )
-        for mi, ma, fwhm, ppfwhm in invalid_inputs:
-            self.assertRaises(ValueError, translate_fwhm, mi, ma, fwhm, ppfwhm)
+        for mi, ma, fwhm in invalid_inputs:
+            print mi, ma, fwhm
+            self.assertRaises(ValueError, fwhm_to_sigma, mi, ma, fwhm)
 
 
 class TestGenGaussian(unittest.TestCase):
