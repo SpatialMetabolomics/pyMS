@@ -515,9 +515,9 @@ def trim(y, x):
     return y, x
 
 
-def cartesian(rx, mx, cutoff):
+def cartesian(rx, mx, threshold=0.0001):
     """
-    .. py:function:: cartesian(rx, mx, cutoff)
+    .. py:function:: cartesian(rx, mx, threshold)
 
     Combine multiple isotope patterns into a single one.
 
@@ -525,7 +525,7 @@ def cartesian(rx, mx, cutoff):
     :type rx: Sequence[ndarray]
     :param mx: Sequence of mass arrays
     :type mx: Sequence[ndarray]
-    :param cutoff: threshold below which the resulting ratios are filtered out
+    :param threshold: threshold below which the resulting ratios are filtered out
     :return: The resulting ratio array and the mass array
     :rtype: Tuple[ndarray]
     """
@@ -533,7 +533,7 @@ def cartesian(rx, mx, cutoff):
     for i in xrange(1, len(rx)):
         newr = np.outer(rx[i], ry).ravel()
         newm = np.add.outer(mx[i], my).ravel()
-        js = np.where(newr > cutoff)[0]
+        js = np.where(newr > threshold)[0]
         ry, my = newr[js], newm[js]
     return ry, my
 
@@ -543,9 +543,9 @@ def cartesian(rx, mx, cutoff):
 ##################################################################################
 def normalize(m, n, charges, cutoff):
     m, n = np.asarray(m).round(8), np.asarray(n).round(8)
+    n *= 100.0 / max(n)
     filter = n > cutoff
     m, n = m[filter], n[filter]
-    n *= 100.0 / max(n)
     if charges != 0:
         m -= charges * mass_electron
         m /= abs(charges)
@@ -642,7 +642,7 @@ def fwhm_to_sigma(min_x, max_x, fwhm):
 ########
 # main function#
 ########
-def complete_isodist(sf, sigma=0.001, cutoff=0.0001, charge=None, pts_per_mz=10000, centroid_func=gradient,
+def complete_isodist(sf, sigma=0.001, cutoff_perc=0.1, charge=None, pts_per_mz=10000, centroid_func=gradient,
                      centroid_kwargs=None):
     """
     Wrapper function for applying perfect_pattern, then gen_gaussian and eventually centroid detection.
@@ -650,25 +650,27 @@ def complete_isodist(sf, sigma=0.001, cutoff=0.0001, charge=None, pts_per_mz=100
     :param sf: the sum formula
     :param sigma: Full width at half maximum
     :type sigma: float
-    :type cutoff: float
+    :param cutoff_perc: min percentage of the maximum intensity to return, max value = 100
+    :type cutoff_perc: float
     :param charge: charge of the molecule
     :type charge: int
-    :param pts_per_mz: Number of points per fwhm for the regular grid
+    :param pts_per_mz: Number of points per mz for the regular grid
     :param centroid_func: the centroid function to apply to the isotope pattern or None if no centroid detection
     should be performed. Must have the same signature as centroid_detection.gradient.
     :param centroid_kwargs: dict to pass to centroid_func as optional parameters
     :return:
     """
-    ms1 = perfect_pattern(sf, cutoff, charge=charge)
+    ms1 = perfect_pattern(sf, cutoff_perc, charge=charge)
     ms2 = apply_gaussian(ms1, sigma, pts_per_mz)
     if centroid_func:
         centroid_kwargs = centroid_kwargs or {'weighted_bins': 5}
+        centroid_kwargs['min_intensity'] = cutoff_perc
         centroided_mzs, centroided_ints, _ = centroid_func(*ms2.get_spectrum(), **centroid_kwargs)
         ms2.add_centroids(centroided_mzs, centroided_ints)
     return ms2
 
 
-def perfect_pattern(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, charge=None):
+def perfect_pattern(sf, cutoff_perc=0.1, single_pattern_func=single_pattern_fft, charge=None):
     """
     Compute the isotope pattern of a molecule given by its sum formula.
 
@@ -677,7 +679,8 @@ def perfect_pattern(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, c
 
     :param sf: the sum formula
     :type sf: SumFormula
-    :type cutoff: float
+    :param cutoff_perc: min percentage of the maximum intensity to return, max value = 100
+    :type cutoff_perc: float
     :param single_pattern_func: the function to compute a single isotope pattern. Must have the same signature as
     single_pattern_fft
     :param charge: charge of the molecule
@@ -688,12 +691,12 @@ def perfect_pattern(sf, cutoff=0.0001, single_pattern_func=single_pattern_fft, c
     single_patterns = (single_pattern_func(segment) for segment in sf.get_segments())
     pattern_list = list(p.get_spectrum() for p in single_patterns)
     single_pattern_masses, single_pattern_ratios = zip(*pattern_list)
-    combined_ratios, combined_masses = trim(*cartesian(single_pattern_ratios, single_pattern_masses, cutoff=cutoff))
-    intensity_filter = combined_ratios > cutoff
-    combined_ratios, combined_masses = combined_ratios[intensity_filter], combined_masses[intensity_filter]
+    combined_ratios, combined_masses = trim(*cartesian(single_pattern_ratios, single_pattern_masses))
+    # intensity_filter = combined_ratios > cutoff_perc
+    # combined_ratios, combined_masses = combined_ratios[intensity_filter], combined_masses[intensity_filter]
     if charge is None:
         charge = sf.charge()
-    normalized_masses, normalized_ratios = normalize(combined_masses, combined_ratios, charge, cutoff)
+    normalized_masses, normalized_ratios = normalize(combined_masses, combined_ratios, charge, cutoff_perc)
     ms = MassSpectrum()
     ms.add_centroids(normalized_masses, normalized_ratios)
     return ms

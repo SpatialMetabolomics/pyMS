@@ -200,7 +200,7 @@ class PerfectPatternTest(unittest.TestCase):
             sf_stub = sf_stubs[sf_str]
             reference_values = chemcalc_ref_values[sf_str]
 
-            actual_masses, actual_ratios = perfect_pattern(sf_stub, cutoff=0.00001, charge=0).get_spectrum(
+            actual_masses, actual_ratios = perfect_pattern(sf_stub, cutoff_perc=0.00001, charge=0).get_spectrum(
                 source="centroids")
             expected_masses, expected_ratios = numpy.asarray(reference_values['mzs']), np.asarray(reference_values[
                                                                                                       'ints'])
@@ -332,28 +332,35 @@ class TestApplyGaussian(unittest.TestCase):
         for i in test_cases:
             self.assertRaises(ValueError, apply_gaussian, *i)
 
-    def test_valid_values(self):
-        test_cases = (
-            # small corner cases
-            (
-                SimpleMock({
+    def apply_and_assert(self, ms_in, sigma, kwargs, expected):
+        actual = apply_gaussian(ms_input=ms_in, sigma=sigma, **kwargs)
+        for ex_p, ex_c, ac_p, ac_c in zip(expected.get_spectrum(), expected.get_spectrum(
+                'centroids'), actual.get_spectrum(), actual.get_spectrum('centroids')):
+            np.testing.assert_array_almost_equal(ac_p, ex_p, decimal=4)
+            np.testing.assert_array_almost_equal(ac_c, ex_c, decimal=4)
+
+    # small corner case
+    def test_default_params_sigma_0_4246(self):
+            self.apply_and_assert(SimpleMock({
+                'get_spectrum': lambda source: (np.array([2.]), np.array([100.]))
+            }), 0.42466090014400953, {}, SimpleMock({
+                'get_spectrum': lambda source=None: (np.linspace(1., 3.0, 21), np.array(
+                    [6.25, 10.5843164, 16.95755409, 25.70284567, 36.85673043, 50., 64.17129488, 77.91645797,
+                     89.50250709, 97.26549474, 100., 97.26549474, 89.50250709, 77.91645797, 64.17129488, 50.,
+                     36.85673043, 25.70284567, 16.95755409, 10.5843164, 6.25])) if not source else ([], [])
+            }))
+
+    # small corner case
+    def test_default_params_sigma_0_8493_pts_per_mz_0_5(self):
+        self.apply_and_assert(SimpleMock({
                     'get_spectrum': lambda source: (np.array([2.]), np.array([100.]))
-                }), 1, {}, SimpleMock({
-                    'get_spectrum': lambda source=None: (np.arange(1., 3.1, .1), np.array(
-                        [6.25, 10.5843164, 16.95755409, 25.70284567, 36.85673043, 50., 64.17129488, 77.91645797,
-                         89.50250709, 97.26549474, 100., 97.26549474, 89.50250709, 77.91645797, 64.17129488, 50.,
-                         36.85673043, 25.70284567, 16.95755409, 10.5843164, 6.25])) if not source else ([], [])
-                })
-            ), (
-                SimpleMock({
-                    'get_spectrum': lambda source: (np.array([2.]), np.array([100.]))
-                }), 2, {'pts_per_fwhm': 1}, SimpleMock({
+                }), 0.8493218002880191, {'pts_per_mz': 0.5}, SimpleMock({
                     'get_spectrum': lambda source=None: (np.arange(1., 3.1, 2), np.array(
                         [100., 100.])) if not source else ([], [])
-                })
-            ),
-            # usual value
-            self._usual_case(),
+                }))
+
+    # usual one
+    def test_default_params_usual_case(self):
             # centroid function
             # (
             #     SimpleMock({
@@ -363,30 +370,38 @@ class TestApplyGaussian(unittest.TestCase):
             #             [100., 100.])) if not source else (np.arange(1., 3.1, 2), np.array([200., 200.]))
             #     })
             # )
-        )
-
-        for (ms_in, fwhm, kwargs, expected) in test_cases:
-            actual = apply_gaussian(ms_in, fwhm, **kwargs)
-            for ex_p, ex_c, ac_p, ac_c in zip(expected.get_spectrum(), expected.get_spectrum(
-                    'centroids'), actual.get_spectrum(), actual.get_spectrum('centroids')):
-                np.testing.assert_array_almost_equal(ex_p, ac_p, decimal=4)
-                np.testing.assert_array_almost_equal(ex_c, ac_c, decimal=4)
+        self.apply_and_assert(*self._usual_case())
 
     def _usual_case(self):
         ms_in = MassSpectrum()
         ms_out = MassSpectrum()
-        fwhm = 0.01
-        pts_per_fwhm = 15
+        sigma = 0.004246609001440096
+        pts_per_mz = 1500
         np.random.seed(0)
         mzs_in = np.sort(np.array([200.] * 10) + np.random.random_sample(10) * 800)
         np.random.seed()
         ints_in = scipy.stats.norm(700, 100).pdf(mzs_in)
         ints_in *= 100 / max(ints_in)
         ms_in.add_centroids(mzs_in, ints_in)
-        mzs_out, ints_out = combinded_gaussian(mzs_in, ints_in, 0.004246609001440096, 699266)
+        mzs_out, ints_out = combinded_gaussian(mzs_in, ints_in, sigma, 699266)
         ints_out *= 100 / max(ints_out)
         ms_out.add_spectrum(mzs_out, ints_out)
-        return ms_in, fwhm, {'pts_per_fwhm': pts_per_fwhm}, ms_out
+        return ms_in, sigma, {'pts_per_mz': pts_per_mz}, ms_out
+
+
+class CompleteIsoDist(unittest.TestCase):
+
+    def test_centr_ints_greater_cutoff(self):
+        sf = 'Au'
+        adduct = '+H'
+        sf_adduct = complex_to_simple(sf + adduct)
+        sf_obj = SumFormulaParser.parse_string(sf_adduct)
+        cutoff = 0.0001
+        ms = complete_isodist(sf_obj, sigma=0.01, charge=1, pts_per_mz=10000, cutoff_perc=cutoff)
+        centr_mzs, centr_ints = ms.get_spectrum(source='centroids')
+
+        for intens in centr_ints:
+            assert intens > cutoff
 
 
 class SegmentStub(object):
