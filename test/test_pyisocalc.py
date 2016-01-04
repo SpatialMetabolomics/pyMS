@@ -6,6 +6,8 @@ import scipy.stats
 
 from common import load_json_file, SimpleMock, resolve_test_resource
 from ..pyisocalc.pyisocalc import *
+from ..pyisocalc.canopy.sum_formula import ParseError
+from ..pyisocalc.canopy.sum_formula_actions import InvalidFormulaError
 
 __author__ = 'dominik'
 
@@ -104,34 +106,25 @@ class SumFormulaTest(unittest.TestCase):
         self.assertSequenceEqual(segments, sf.get_segments())
 
 
-class SumFormulaParserTest(unittest.TestCase):
-    def test_expand_raises_on_malformed_string(self):
-        syntactically_invalid_strings = ['()=', 'h2o', '']
-        semantically_invalid_strings = ['ABC', 'FoO', 'Hh20']
+class SumFormulaParsing(unittest.TestCase):
+    def test_raises_on_malformed_string(self):
+        syntactically_invalid_strings = ['()=', 'H((H20)3', 'h2o', '', 'H-3', 'H0H4.2']
+        semantically_invalid_strings = ['ABC', 'FoO', 'Hh20', 'H0', 'H-H', 'H2O-Cl']
         for s in syntactically_invalid_strings:
-            self.assertRaises(ValueError, SumFormulaParser.expand, s)
+            self.assertRaises(ParseError, parseSumFormula, s)
         for s in semantically_invalid_strings:
-            self.assertRaises(ValueError, SumFormulaParser.expand, s)
-
-    def test_make_segments_raises_on_nonexpanded_string(self):
-        syntactically_invalid_strings = ['()=', 'H((H20)3', 'h2o', '',
-                                         'H(NO2)3', 'H-3', 'H0' 'H4.2']
-        semantically_invalid_strings = ['ABC', 'FoO', 'Hh20']
-        for s in syntactically_invalid_strings:
-            self.assertRaises(ValueError, SumFormulaParser.expand, s)
-        for s in semantically_invalid_strings:
-            self.assertRaises(ValueError, SumFormulaParser.expand, s)
+            self.assertRaises(InvalidFormulaError, parseSumFormula, s)
 
     def test_expand(self):
         test_cases = (
-            ('H(NO2)3', 'HN3O6'),
+            ('H(NO2)3', 'HO6N3'),
             ('(N)5', 'N5'),
             ('(((H)2)3)4', 'H24'),
             ('H2O', 'H2O'),
-            ('Cl(Cl2)3', 'ClCl6')
+            ('Cl(Cl2)3', 'Cl7')
         )
         for i, o in test_cases:
-            self.assertEqual(o, SumFormulaParser.expand(i))
+            self.assertEqual(o, "".join(map(str, sorted(parseSumFormula(i).get_segments()))))
 
     def test_make_segments(self):
         test_cases = (
@@ -139,7 +132,7 @@ class SumFormulaParserTest(unittest.TestCase):
             ('H2O', [FormulaSegment(Element('H'), 2), FormulaSegment(Element('O'), 1)])
         )
         for i, o in test_cases:
-            self.assertSequenceEqual(o, list(SumFormulaParser.iter_segments(i)))
+            self.assertSequenceEqual(o, sorted(parseSumFormula(i).get_segments()))
 
 
 class SingleElementPatternTest(unittest.TestCase):
@@ -260,7 +253,7 @@ class TestFwhmToSigma(unittest.TestCase):
             (-27, -3, 0.01)
         )
         for mi, ma, fwhm in invalid_inputs:
-            print mi, ma, fwhm
+            # print mi, ma, fwhm
             self.assertRaises(ValueError, fwhm_to_sigma, mi, ma, fwhm)
 
 
@@ -394,8 +387,7 @@ class CompleteIsoDist(unittest.TestCase):
     def test_centr_ints_greater_cutoff(self):
         sf = 'Au'
         adduct = '+H'
-        sf_adduct = complex_to_simple(sf + adduct)
-        sf_obj = SumFormulaParser.parse_string(sf_adduct)
+        sf_obj = parseSumFormula(sf + adduct)
         cutoff = 0.0001
         ms = complete_isodist(sf_obj, sigma=0.01, charge=1, pts_per_mz=10000, cutoff_perc=cutoff)
         centr_mzs, centr_ints = ms.get_spectrum(source='centroids')
