@@ -11,7 +11,8 @@ def gradient(mzs, intensities, **opt_args):
             for i in function_args.keys():
                 print i
             raise NameError('gradient does not take argument: %s' % key)
-    mzMaxNum = function_args['max_output']
+    # TODO: temporary workaround to disable the parameter until it is fixed.
+    mzMaxNum = -1
     weighted_bins = function_args['weighted_bins']
     min_intensity = function_args['min_intensity']
     gradient_type = function_args['grad_type']
