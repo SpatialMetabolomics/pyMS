@@ -115,11 +115,17 @@ class Grammar(object):
             if address2 is not FAILURE:
                 elements0.append(address2)
                 address6 = FAILURE
-                index4 = self._offset
-                address6 = self._read_adduct()
-                if address6 is FAILURE:
-                    address6 = TreeNode(self._input[index4:index4], index4)
-                    self._offset = index4
+                remaining1, index4, elements3, address7 = 0, self._offset, [], True
+                while address7 is not FAILURE:
+                    address7 = self._read_adduct()
+                    if address7 is not FAILURE:
+                        elements3.append(address7)
+                        remaining1 -= 1
+                if remaining1 <= 0:
+                    address6 = TreeNode(self._input[index4:self._offset], index4, elements3)
+                    self._offset = self._offset
+                else:
+                    address6 = FAILURE
                 if address6 is not FAILURE:
                     elements0.append(address6)
                 else:

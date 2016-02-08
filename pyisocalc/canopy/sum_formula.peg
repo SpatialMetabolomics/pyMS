@@ -1,6 +1,6 @@
 grammar SumFormula
 
-formula               <- complex ( "." complex )* adduct?           %make_formula
+formula               <- complex ( "." complex )* adduct*           %make_formula
 complex               <- number? fragment+                          %expand_complex
 fragment              <- non_expanded_fragment / expanded_fragment
 non_expanded_fragment <- "(" fragment ")" number?                   %expand_fragment

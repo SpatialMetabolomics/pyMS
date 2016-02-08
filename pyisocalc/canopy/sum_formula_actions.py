@@ -63,10 +63,10 @@ class Actions(object):
     def make_formula(self, input, start, end, elements):
         counts = Counter()
         counts.update(elements[0])
-        if isinstance(elements[2], Counter):
-            counts.update(elements[2])
         for child in elements[1]:
             counts.update(child.complex)
+        for child in elements[2]:
+            counts.update(child)
         for k in counts.keys():
             if counts[k] == 0:
                 del counts[k]
