@@ -121,7 +121,9 @@ class SumFormulaParsing(unittest.TestCase):
             ('(N)5', 'N5'),
             ('(((H)2)3)4', 'H24'),
             ('H2O', 'H2O'),
-            ('Cl(Cl2)3', 'Cl7')
+            ('Cl(Cl2)3', 'Cl7'),
+            ('H3-H', 'H2'),
+            ('H5O2-H2O+H','H4O'),
         )
         for i, o in test_cases:
             self.assertEqual(o, "".join(map(str, sorted(parseSumFormula(i).get_segments()))))
