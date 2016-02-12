@@ -1,10 +1,10 @@
-from .sum_formula import *
 from ..periodic_table import periodic_table
 from collections import Counter
 
 class InvalidFormulaError(Exception):
     def __init__(self, desc):
         self.value = desc
+
     def __str__(self):
         return repr(self.value)
 
@@ -31,7 +31,7 @@ class Actions(object):
         n = 1
         if isinstance(elements[1], int):
             n = elements[1]
-        counts = Counter({elements[0] : n})
+        counts = Counter({elements[0]: n})
         return counts
 
     def combine_fragments(self, input, start, end, elements):

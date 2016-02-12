@@ -10,7 +10,6 @@
 # Dependencies:
 # python2.7, python-numpy
 #########################################################################
-import re  # for regular expressions
 import functools
 
 import numpy as np
@@ -49,7 +48,7 @@ class Element(object):
                 # self._number = data[0]
                 # self._masses = data[1]
                 # self._ratios = data[2]
-            except KeyError as e:
+            except KeyError:
                 raise ValueError("%s is not an element." % id)
         elif isinstance(id, int):
             if id <= 0:

@@ -9,7 +9,7 @@ class MassSpectrum:
         self._centroids = []
         self.centroids_intensity = []
 
-    ## Private basic spectrum I/O
+    # Private basic spectrum I/O
     def __add_mzs(self, mzs):
         self._mzs = mzs
 
@@ -34,7 +34,7 @@ class MassSpectrum:
     def __add_centroids_intensities(self, intensity_list):
         self.centroids_intensity = intensity_list
 
-    ## Public methods
+    # Public methods
     def add_spectrum(self, mzs, intensities):
         if len(mzs) != len(intensities):
             raise IOError("mz/intensities vector different lengths")
