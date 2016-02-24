@@ -1,43 +1,43 @@
 import numpy as np
-import sys
-sys.path.append('/Users/palmer/Documents/python_codebase')
+
 import pyMS.normalisation
 
 
-class mass_spectrum():
+class MassSpectrum:
     # a class that describes a single mass spectrum
     def __init__(self):
-        self.mzs = []
-        self.intensities = []
-        self.centroids = []
-        self.norm = []
-        ## Private basic spectrum I/O
+        self._mzs = []
+        self._intensities = []
+        self._centroids = []
+        self._centroids_intensity = []
+        self._norm = []
 
+    # Private basic spectrum I/O
     def __add_mzs(self, mzs):
-        self.mzs = mzs
+        self._mzs = mzs
 
     def __add_intensities(self, intensities):
-        self.intensities = intensities
+        self._intensities = intensities
 
     def __get_mzs(self):
-        return np.asarray(self.mzs)
+        return np.asarray(self._mzs)
 
     def __get_intensities(self):
-        return np.asarray(self.intensities)
+        return np.asarray(self._intensities)
 
     def __get_mzs_centroids(self):
-        return np.asarray(self.centroids)
+        return np.asarray(self._centroids)
 
     def __get_intensities_centroids(self):
-        return np.asarray(self.centroids_intensity)
+        return np.asarray(self._centroids_intensity)
 
     def __add_centroids_mzs(self, mz_list):
-        self.centroids = mz_list
+        self._centroids = mz_list
 
     def __add_centroids_intensities(self, intensity_list):
-        self.centroids_intensity = intensity_list
+        self._centroids_intensity = intensity_list
 
-    ## Public methods
+    # Public methods
     def add_spectrum(self, mzs, intensities):
         if len(mzs) != len(intensities):
             raise IOError("mz/intensities vector different lengths")
@@ -59,15 +59,19 @@ class mass_spectrum():
             intensities = self.__get_intensities_centroids()
         else:
             raise IOError('spectrum source should be profile or centroids')
-        #max_idx = np.argmax(intensities)
         return mzs, intensities
 
-    def normalise_spectrum(self,method="tic"):
-        self.centroids_intensity = pyMS.normalisation.apply_normalisation(self.centroids_intensity, method)
-        self.intensities = pyMS.normalisation.apply_normalisation(self.intensities, method)
-        self.norm.append("method")
+    def normalise_spectrum(self, method="tic"):
+        self._centroids_intensity = pyMS.normalisation.apply_normalisation(self._centroids_intensity, method)
+        self._intensities = pyMS.normalisation.apply_normalisation(self._intensities, method)
+        self._norm.append("method")
 
-class MSn_spectrum(mass_spectrum):
+
+# for compatibility with andy-d-palmer/pyIMS
+mass_spectrum = MassSpectrum
+
+
+class MSn_spectrum(MassSpectrum):
     def __init__(self):
         self.ms_transitions = []
         self.ms_level = 1

@@ -1,0 +1,12 @@
+grammar SumFormula
+
+formula               <- complex ( "." complex )* adduct*           %make_formula
+complex               <- number? fragment+                          %expand_complex
+fragment              <- non_expanded_fragment / expanded_fragment
+non_expanded_fragment <- "(" fragment ")" number?                   %expand_fragment
+expanded_fragment     <- simple_fragment+                           %combine_fragments
+simple_fragment       <- element num:number?                        %make_simple_fragment
+adduct                <- sign complex                               %multiply_by_sign
+sign                  <- [+ -]
+element               <- [A-Z] [a-z]*                               %make_element
+number                <- [0-9]+                                     %make_number

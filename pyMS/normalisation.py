@@ -1,7 +1,8 @@
 __author__ = 'palmer'
 import numpy as np
 
-def apply_normalisation(counts,type_str=""):
+
+def apply_normalisation(counts, type_str=""):
     """
     helper function to apply a normalisation function (with some input testing etc)
     :param counts: numpy array of values to normalise
@@ -9,16 +10,17 @@ def apply_normalisation(counts,type_str=""):
     :return: numpy array of normalised counts
     """
     normToApply = {"none": none,
-                 "tic":tic,
-                 "rms":rms,
-                 "mad":mad,
-                 "sqrt":sqrt}
+                   "tic": tic,
+                   "rms": rms,
+                   "mad": mad,
+                   "sqrt": sqrt}
     if type_str not in normToApply.keys():
-        raise ValueError("{} not in {}".format(type_str,normToApply.keys()))
-    counts = np.asarray(counts,dtype=float)
+        raise ValueError("{} not in {}".format(type_str, normToApply.keys()))
+    counts = np.asarray(counts, dtype=float)
     return normToApply[type_str](counts)
 
-def shift_and_scale(counts,scale=1.0,shift=0.0):
+
+def shift_and_scale(counts, scale=1.0, shift=0.0):
     """
     applys the generic scaling a shifting operation
     :param counts: numpy array
@@ -31,7 +33,7 @@ def shift_and_scale(counts,scale=1.0,shift=0.0):
         return np.zeros(np.shape(counts))
     if shift > 0:
         counts -= shift
-    return (counts)/scale
+    return (counts) / scale
 
 
 def check_zeros(counts):
@@ -45,13 +47,14 @@ def check_zeros(counts):
     else:
         return False
 
+
 def none(counts):
     """
     does nothing, just returns input. is a dummy for programmatic case where a function must be supplied
     :param counts:  numpy array
     :return: counts:
     """
-    return np.asarray(counts,dtype=float)
+    return np.asarray(counts, dtype=float)
 
 
 def tic(counts):
@@ -62,7 +65,7 @@ def tic(counts):
     """
     if check_zeros(counts):
         return counts
-    return shift_and_scale(counts,scale=np.sum(counts))
+    return shift_and_scale(counts, scale=np.sum(counts))
 
 
 def rms(counts):
@@ -73,7 +76,7 @@ def rms(counts):
     """
     if check_zeros(counts):
         return counts
-    return shift_and_scale(counts,scale=np.sqrt(np.mean(np.square(counts,dtype=float))))
+    return shift_and_scale(counts, scale=np.sqrt(np.mean(np.square(counts, dtype=float))))
 
 
 def mad(counts):
@@ -84,8 +87,7 @@ def mad(counts):
     """
     if check_zeros(counts):
         return counts
-    return shift_and_scale(counts,scale=np.median(np.abs(counts - np.median(counts))))
-
+    return shift_and_scale(counts, scale=np.median(np.abs(counts - np.median(counts))))
 
 
 def sqrt(counts):
@@ -97,7 +99,5 @@ def sqrt(counts):
     if check_zeros(counts):
         return counts
     counts_norm = np.sqrt(counts)
-    counts_norm[counts==0] = 0
+    counts_norm[counts == 0] = 0
     return counts_norm
-
-
