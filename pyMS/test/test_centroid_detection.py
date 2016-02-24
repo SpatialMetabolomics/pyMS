@@ -26,6 +26,8 @@ class CentroidDetectionTest(common.MSTestCase):
 
         for passing_spectrum in self.to_array_tuples(self.valid_spectrum_data):
             for passing_kwarg in passing_test_cases:
+                if len(passing_spectrum[0]) <= passing_kwarg.get('weighted_bins', 1) * 2:
+                    continue
                 try:
                     gradient(*passing_spectrum, **passing_kwarg)
                 except Exception as e:
@@ -43,6 +45,8 @@ class CentroidDetectionTest(common.MSTestCase):
 
         for mzs, ints in self.to_array_tuples(self.valid_spectrum_data):
             for th, max_out, bins in itertools.product(thresholds, max_outputs, weighted_bins):
+                if len(mzs) <= bins * 2:
+                    continue
                 kwargs = {'min_intensity': th, 'max_output': max_out, 'grad_type': 'diff', 'weighted_bins': bins}
                 res_mzs, res_ints, res_idxs = gradient(mzs, ints, **kwargs)
                 self.check_postconditions(mzs, ints, kwargs, res_mzs, res_ints, res_idxs)
