@@ -2,7 +2,7 @@ import numpy as np
 
 
 def gradient(mzs, intensities, **opt_args):
-    function_args = {'max_output': -1, 'weighted_bins': 1, 'min_intensity': 0, 'grad_type': 'gradient'}
+    function_args = {'max_output': -1, 'weighted_bins': 1, 'min_intensity': 1e-5, 'grad_type': 'gradient'}
     for key, val in opt_args.iteritems():
         if key in function_args.keys():
             function_args[key] = val
@@ -16,6 +16,9 @@ def gradient(mzs, intensities, **opt_args):
     weighted_bins = function_args['weighted_bins']
     min_intensity = function_args['min_intensity']
     gradient_type = function_args['grad_type']
+    assert mzMaxNum < len(mzs)
+    assert len(mzs) == len(intensities)
+    assert weighted_bins < len(mzs) / 2.
     # calc first&sectond differential
     if gradient_type == 'gradient':
         MZgrad = np.gradient(intensities)
