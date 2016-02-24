@@ -5,11 +5,10 @@ import numpy
 import scipy.stats
 
 from common import load_json_file, SimpleMock, resolve_test_resource
+from pyMS.pyisocalc import pyisocalc
 from ..pyisocalc.pyisocalc import *
 from ..pyisocalc.canopy.sum_formula import ParseError
 from ..pyisocalc.canopy.sum_formula_actions import InvalidFormulaError
-
-__author__ = 'dominik'
 
 element_stubs = {
     'O': SimpleMock({
@@ -408,6 +407,29 @@ class SegmentStub(object):
 
     def amount(self):
         return self._number
+
+
+# Test from adp, moved here and adjusted to this API. TODO: Merge with SumFormulaParsing
+class PyisocalcTest(unittest.TestCase):
+    def test_correct_element_parsing(self):
+        str_el = {"K+H": {"K": 1, "H": 1},
+                  "K+H2": {"K": 1, "H": 2},
+                  "H2O2-H2O+K": {"O": 1, "K": 1},
+                  "(C1H2O3)1-H1": {"C": 1, "H": 1, "O": 3},
+                  "Fe(ClO3)5": {"Fe": 1, "Cl": 5, "O": 15},
+                  "C5H10Ru.3Cl": {"C": 5, "H": 10, "Ru": 1, "Cl": 3},}
+
+        for s in str_el:
+            sf = pyisocalc.parseSumFormula(s)
+            e_ = {str(s.element()): s.amount() for s in sf.get_segments()}
+            self.assertItemsEqual(e_.keys(), str_el[s].keys())
+            for el in str_el[s]:
+                self.assertEqual(str_el[s][el], e_[el], msg="{} != {}  in {}".format(str_el[s][el], e_[el], el))
+
+    def test_error_on_invalid_input(self):
+        str_el = ['M', 'm', 'H-H', 'H-H2', 'K-H']
+        for s in str_el:
+            self.assertRaises(Exception, pyisocalc.parseSumFormula, s)
 
 
 if __name__ == '__main__':
