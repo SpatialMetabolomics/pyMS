@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 #########################################################################
-# Author: Andy Ohlin (debian.user@gmx.com)
-# Modified by: Andrew Palmer (palmer@embl.de)
-#              Artem Tarasov (lomereiter@gmail.com)
+# Authors : Andrew Palmer (palmer@embl.de)
+#           Artem Tarasov (lomereiter@gmail.com)
+#           Dominik Fay (fay@embl.de)
+# Modified from v0.8 of code by: Andy Ohlin (debian.user@gmx.com)
 #
 ##########################################################################
-# Version 0.3 -- Modified from v0.8 of Andy Ohlin's code
+# Version 0.3 
 #
 # Dependencies:
 # python2.7, python-numpy
