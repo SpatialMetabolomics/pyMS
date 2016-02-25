@@ -4,13 +4,20 @@ import pyMS.normalisation
 
 
 class MassSpectrum:
-    # a class that describes a single mass spectrum
-    def __init__(self):
+    """
+    a data container for a single mass spectrum
+    includes methods for signal processing
+    """
+    def __init__(self, profile_spec=[], centroid_spec=[]):
         self._mzs = []
         self._intensities = []
         self._centroids = []
         self._centroids_intensity = []
         self._processing = []
+        if profile_spec != []:
+            self._mzs, self._intensities = profile_spec
+        if centroid_spec != []:
+            self._centroids, self._centroids_intensity = centroid_spec
 
     # Private basic spectrum I/O
     def __add_mzs(self, mzs):
@@ -76,9 +83,12 @@ mass_spectrum = MassSpectrum
 
 
 class MSn_spectrum(MassSpectrum):
-    def __init__(self):
+    """
+    a data container for fragmentation spectrum
+    """
+    def __init__(self, ms_level=""):
         self.ms_transitions = []
-        self.ms_level = 1
+        self.ms_level = ms_level
 
     def add_transition(self, transitions):
         # transitions is a list of ms fragmentation acceptance windows
