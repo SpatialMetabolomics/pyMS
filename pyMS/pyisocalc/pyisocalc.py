@@ -22,7 +22,7 @@ from ..centroid_detection import gradient
 from .periodic_table import periodic_table
 from .canopy.sum_formula import parse as canopy_sum_formula_parse
 from .canopy.sum_formula_actions import Actions as SumFormulaActions
-
+from .canopy.sum_formula_actions import InvalidFormulaError
 ver = '0.3 (4 Jan. 2016)'
 
 mass_electron = 0.00054857990924
