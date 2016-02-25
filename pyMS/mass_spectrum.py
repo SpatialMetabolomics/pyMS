@@ -10,7 +10,7 @@ class MassSpectrum:
         self._intensities = []
         self._centroids = []
         self._centroids_intensity = []
-        self._norm = []
+        self._processing = []
 
     # Private basic spectrum I/O
     def __add_mzs(self, mzs):
@@ -61,11 +61,15 @@ class MassSpectrum:
             raise IOError('spectrum source should be profile or centroids')
         return mzs, intensities
 
-    def normalise_spectrum(self, method="tic"):
+    def normalise_spectrum(self, method="tic", method_args={}):
         self._centroids_intensity = pyMS.normalisation.apply_normalisation(self._centroids_intensity, method)
         self._intensities = pyMS.normalisation.apply_normalisation(self._intensities, method)
-        self._norm.append("method")
+        self._processing.append(method)
 
+    def smooth_spectrum(self, method="sg_smooth", method_args={}):
+        self._centroids_intensity = pyMS.normalisation.apply_normalisation(self._centroids_intensity, method)
+        self._mzs, self._intensities = pyMS.normalisation.apply_normalisation(self._intensities, method)
+        self._processing.append(method)
 
 # for compatibility with andy-d-palmer/pyIMS
 mass_spectrum = MassSpectrum
