@@ -8,7 +8,7 @@ See the documentation on [readthedocs](http://pyms.readthedocs.org/en/latest/pyM
 
 install this branch with pip
 ```
-sudo pip install git+https://github.com/alexandrovteam/pyMS@adp
+sudo pip install git+https://github.com/alexandrovteam/pyMS@<insert branch name here>
 ```
 # Package Contents
 

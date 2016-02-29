@@ -2,7 +2,7 @@
 #########################################################################
 # Authors : Andrew Palmer (palmer@embl.de)
 #           Artem Tarasov (lomereiter@gmail.com)
-#           Dominik Fay (fay@embl.de)
+#           Dominik Fay (dominik.fay@embl.de)
 # Modified from v0.8 of code by: Andy Ohlin (debian.user@gmx.com)
 #
 ##########################################################################
