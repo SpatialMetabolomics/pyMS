@@ -24,7 +24,7 @@ import rtd_gen_docs
 from pyMSpec import __version__
 
 pkg_name = u'pyMSpec'
-pkg_name_lowercase = u'pyMSpec'
+pkg_name_lowercase = u'pymspec'
 rtd_gen_docs.main()
 
 # see http://www.sphinx-doc.org/en/stable/ext/autodoc.html#confval-autodoc_mock_imports
