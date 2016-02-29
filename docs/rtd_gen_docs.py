@@ -6,7 +6,7 @@ curdir = abspath(dirname(__file__))
 rootdir = dirname(curdir)
 conf_dir = join(rootdir, 'conf')
 apidoc_cmd = 'sphinx-apidoc'
-apidoc_exclusions = join(rootdir, 'pyMS', 'test')
+apidoc_exclusions = join(rootdir, 'pyMSpec', 'test')
 apidoc_params = '-f -o {} {} {}'.format(curdir, rootdir, apidoc_exclusions)
 
 

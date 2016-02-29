@@ -1,5 +1,5 @@
 def make_sf_adduct_database(sum_formulae,adducts,output_filename,sigma=0.001,resolution=10000,charge=1):
-    from pyMS.pyisocalc import pyisocalc
+    from pyMSpec.pyisocalc import pyisocalc
     # Extract variables from config dict
     # Check if already genrated and load if possible, otherwise calculate fresh
     with open(output_filename,'a') as f_out:
@@ -28,7 +28,7 @@ def make_sf_adduct_database(sum_formulae,adducts,output_filename,sigma=0.001,res
 
 
 def make_sf_adduct_optimusfilter(sum_formulae,adducts,output_filename,sigma=0.001,resolution=10000,charge=1):
-    from pyMS.pyisocalc import pyisocalc
+    from pyMSpec.pyisocalc import pyisocalc
     # Extract variables from config dict
     # Check if already genrated and load if possible, otherwise calculate fresh
     with open(output_filename,'a') as f_out:

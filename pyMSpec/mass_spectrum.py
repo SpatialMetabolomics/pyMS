@@ -1,6 +1,6 @@
 import numpy as np
 
-import pyMS.normalisation
+import pyMSpec.normalisation
 
 
 class MassSpectrum:
@@ -69,13 +69,13 @@ class MassSpectrum:
         return mzs, intensities
 
     def normalise_spectrum(self, method="tic", method_args={}):
-        self._centroids_intensity = pyMS.normalisation.apply_normalisation(self._centroids_intensity, method)
-        self._intensities = pyMS.normalisation.apply_normalisation(self._intensities, method)
+        self._centroids_intensity = pyMSpec.normalisation.apply_normalisation(self._centroids_intensity, method)
+        self._intensities = pyMSpec.normalisation.apply_normalisation(self._intensities, method)
         self._processing.append(method)
 
     def smooth_spectrum(self, method="sg_smooth", method_args={}):
-        self._centroids_intensity = pyMS.normalisation.apply_normalisation(self._centroids_intensity, method)
-        self._mzs, self._intensities = pyMS.normalisation.apply_normalisation(self._intensities, method)
+        self._centroids_intensity = pyMSpec.normalisation.apply_normalisation(self._centroids_intensity, method)
+        self._mzs, self._intensities = pyMSpec.normalisation.apply_normalisation(self._intensities, method)
         self._processing.append(method)
 
 # for compatibility with andy-d-palmer/pyIMS

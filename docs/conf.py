@@ -21,10 +21,10 @@ from recommonmark.parser import CommonMarkParser
 sys.path.extend(['.', '..'])
 
 import rtd_gen_docs
-from pyMS import __version__
+from pyMSpec import __version__
 
-pkg_name = u'pyMS'
-pkg_name_lowercase = u'pyms'
+pkg_name = u'pyMSpec'
+pkg_name_lowercase = u'pyMSpec'
 rtd_gen_docs.main()
 
 # see http://www.sphinx-doc.org/en/stable/ext/autodoc.html#confval-autodoc_mock_imports

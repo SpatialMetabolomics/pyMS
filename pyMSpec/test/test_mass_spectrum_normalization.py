@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
-import pyMS.normalisation as normalisation
-from pyMS.mass_spectrum import mass_spectrum
+import pyMSpec.normalisation as normalisation
+from pyMSpec.mass_spectrum import mass_spectrum
 
 __author__ = 'palmer'
 

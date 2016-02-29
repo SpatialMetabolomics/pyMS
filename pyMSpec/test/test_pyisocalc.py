@@ -5,7 +5,7 @@ import numpy
 import scipy.stats
 
 from common import load_json_file, SimpleMock, resolve_test_resource
-from pyMS.pyisocalc import pyisocalc
+from pyMSpec.pyisocalc import pyisocalc
 from ..pyisocalc.pyisocalc import *
 from ..pyisocalc.canopy.sum_formula import ParseError
 from ..pyisocalc.canopy.sum_formula_actions import InvalidFormulaError

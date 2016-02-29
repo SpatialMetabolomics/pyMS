@@ -1,5 +1,5 @@
 import numpy as np
-from pyMS.mass_spectrum import mass_spectrum
+from pyMSpec.mass_spectrum import mass_spectrum
 
 
 class MSdataset():

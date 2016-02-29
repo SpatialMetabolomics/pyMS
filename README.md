@@ -1,14 +1,14 @@
-# README [![Documentation Status](https://readthedocs.org/projects/pyms/badge/?version=latest)](http://pyms.readthedocs.org/en/latest/?badge=latest)#
+# README [![Documentation Status](https://readthedocs.org/projects/pyMSpec/badge/?version=latest)](http://pyMSpec.readthedocs.org/en/latest/?badge=latest)#
 
 This repository contains a Python library for processing individual mass spectra.
 
-See the documentation on [readthedocs](http://pyms.readthedocs.org/en/latest/pyMS.html)
+See the documentation on [readthedocs](http://pyMSpec.readthedocs.org/en/latest/pyMSpec.html)
 
 # Installation
 
 install this branch with pip
 ```
-sudo pip install git+https://github.com/alexandrovteam/pyMS@<insert branch name here>
+sudo pip install git+https://github.com/alexandrovteam/pyMSpec@<insert branch name here>
 ```
 # Package Contents
 
