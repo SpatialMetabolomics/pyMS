@@ -431,6 +431,10 @@ class PyisocalcTest(unittest.TestCase):
         for s in str_el:
             self.assertRaises(Exception, pyisocalc.parseSumFormula, s)
 
+    def test_error_on_memory_hungry_input(self):
+        for s in ['Sn10', 'W100']:
+            self.assertRaises(Exception, pyisocalc.complete_isodist, s)
+
 
 if __name__ == '__main__':
     unittest.main()

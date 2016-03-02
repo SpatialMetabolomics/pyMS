@@ -6,7 +6,7 @@
 # Modified from v0.8 of code by: Andy Ohlin (debian.user@gmx.com)
 #
 ##########################################################################
-# Version 0.3 
+# Version 0.3
 #
 # Dependencies:
 # python2.7, python-numpy
@@ -290,6 +290,8 @@ def single_pattern_fft(segment, threshold=1e-9):
         res.add_spectrum(iso_mass[significant], iso_abundance[significant])
         return res
     dim = len(iso_abundance) - 1
+    if (amount + 1) ** dim > 1e7:
+        raise Exception("Can't compute isotope pattern for" + str(segment))
     abundance = np.zeros([amount + 1] * dim)
     abundance.flat[0] = iso_abundance[0]
     abundance.flat[(amount + 1) ** np.arange(dim)] = iso_abundance[-1:0:-1]
