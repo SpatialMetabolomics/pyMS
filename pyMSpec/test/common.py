@@ -64,7 +64,7 @@ class SimpleMock(object):
         return object.__getattribute__(self, '_attrs')[name]
 
 
-def resolve_test_resource(module, name, resource_id):
+def resolve_resource(module, name, resource_id):
     fn = "%(module)s_%(name)s_refdata_%(id)s.json" % {"module": module, "name": name, "id": resource_id}
     abs_path_to_resource_dir = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(abs_path_to_resource_dir, fn)

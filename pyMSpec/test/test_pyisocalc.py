@@ -4,11 +4,12 @@ import unittest
 import numpy
 import scipy.stats
 
-from common import load_json_file, SimpleMock, resolve_test_resource
-from pyMSpec.pyisocalc import pyisocalc
+from common import load_json_file, SimpleMock, resolve_resource
 from ..pyisocalc.pyisocalc import *
 from ..pyisocalc.canopy.sum_formula import ParseError
 from ..pyisocalc.canopy.sum_formula_actions import InvalidFormulaError
+
+__author__ = 'dominik'
 
 element_stubs = {
     'O': SimpleMock({
@@ -55,7 +56,7 @@ sf_stubs = {
 
 chemcalc_ref_values = {}
 for sf_str in sf_stubs:
-    fn = resolve_test_resource("pyisocalc", "perfect_pattern", sf_str)
+    fn = resolve_resource("pyisocalc", "perfect_pattern", sf_str)
     res_dict = load_json_file(fn)
     chemcalc_ref_values[sf_str] = res_dict
 
@@ -107,7 +108,7 @@ class SumFormulaTest(unittest.TestCase):
 
 class SumFormulaParsing(unittest.TestCase):
     def test_raises_on_malformed_string(self):
-        syntactically_invalid_strings = ['()=', 'H((H20)3', 'h2o', '', 'H-3', 'H0H4.2']
+        syntactically_invalid_strings = ['()=', 'H((H20)3', 'h2o', '', 'H-3', 'H0H4.2', '85H154O17P2']
         semantically_invalid_strings = ['ABC', 'FoO', 'Hh20', 'H0', 'H-H', 'H2O-Cl']
         for s in syntactically_invalid_strings:
             self.assertRaises(ParseError, parseSumFormula, s)
@@ -123,6 +124,7 @@ class SumFormulaParsing(unittest.TestCase):
             ('Cl(Cl2)3', 'Cl7'),
             ('H3-H', 'H2'),
             ('H5O2-H2O+H','H4O'),
+            ('C5H5O2.C2-H2O+H','H4C7O')
         )
         for i, o in test_cases:
             self.assertEqual(o, "".join(map(str, sorted(parseSumFormula(i).get_segments()))))
@@ -139,7 +141,7 @@ class SumFormulaParsing(unittest.TestCase):
 class SingleElementPatternTest(unittest.TestCase):
     def setUp(self):
         self.tol = 1e-23
-        self.Fe78_res_dict = load_json_file(resolve_test_resource("pyisocalc", "single_pattern", "Fe78"))
+        self.Fe78_res_dict = load_json_file(resolve_resource("pyisocalc", "single_pattern", "Fe78"))
 
     def test_single_element_pattern(self):
         segments = (
