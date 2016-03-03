@@ -422,7 +422,7 @@ class PyisocalcTest(unittest.TestCase):
                   "C5H10Ru.3Cl": {"C": 5, "H": 10, "Ru": 1, "Cl": 3},}
 
         for s in str_el:
-            sf = pyisocalc.parseSumFormula(s)
+            sf = parseSumFormula(s)
             e_ = {str(s.element()): s.amount() for s in sf.get_segments()}
             self.assertItemsEqual(e_.keys(), str_el[s].keys())
             for el in str_el[s]:
@@ -431,11 +431,11 @@ class PyisocalcTest(unittest.TestCase):
     def test_error_on_invalid_input(self):
         str_el = ['M', 'm', 'H-H', 'H-H2', 'K-H']
         for s in str_el:
-            self.assertRaises(Exception, pyisocalc.parseSumFormula, s)
+            self.assertRaises(Exception, parseSumFormula, s)
 
     def test_error_on_memory_hungry_input(self):
         for s in ['Sn10', 'W100']:
-            self.assertRaises(Exception, pyisocalc.complete_isodist, s)
+            self.assertRaises(Exception, complete_isodist, s)
 
 
 if __name__ == '__main__':
