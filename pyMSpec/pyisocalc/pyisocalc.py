@@ -386,7 +386,12 @@ def gen_gaussian(ms, sigma, pts):
         raise ValueError("sigma and pts must be greater than 0")
     mzs, intensities = ms.get_spectrum(source="centroids")
     xvector = np.linspace(min(mzs) - 1, max(mzs) + 1, pts)
-    yvector = intensities.dot(exp(-0.5 * (np.add.outer(mzs, -xvector) / sigma) ** 2))
+    if len(mzs) * len(xvector) < 1e6:
+        yvector = intensities.dot(exp(-0.5 * (np.add.outer(mzs, -xvector) / sigma) ** 2))
+    else:
+        yvector = np.zeros_like(xvector)
+        for mz, intensity in zip(mzs, intensities):
+            yvector += intensity * exp(-0.5 * (np.add.outer(mz, -xvector) / sigma) ** 2)
     return xvector, yvector
 
 
