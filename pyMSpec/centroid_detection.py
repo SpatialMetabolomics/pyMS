@@ -12,7 +12,7 @@ def gradient(mzs, intensities, **opt_args):
                 print i
             raise NameError('gradient does not take argument: %s' % key)
     # TODO: temporary workaround to disable the parameter until it is fixed.
-    mzMaxNum = -1
+    mzMaxNum = function_args['max_output']
     weighted_bins = function_args['weighted_bins']
     min_intensity = function_args['min_intensity']
     gradient_type = function_args['grad_type']
@@ -55,13 +55,13 @@ def gradient(mzs, intensities, **opt_args):
             intensities_list = intensities_list[sort_idx[-mzMaxNum:]]
             mzs_list = mzs_list[sort_idx[-mzMaxNum:]]
             indices_list = indices_list[sort_idx[-mzMaxNum:]]
-        elif len(mzs) < mzMaxNum:
-            # FIXME: for what purpose are we appending zeros here?
-            lengthDiff = mzMaxNum - len(indices_list)
-            pad = np.zeros((lengthDiff, 1))
-            mzs_list = np.concatenate((mzs_list, pad))
-            intensities_list = np.concatenate((intensities_list, pad))
-            indices_list = np.concatenate((indices_list, pad))
+        #elif len(mzs) < mzMaxNum:
+        #    # FIXME: for what purpose are we appending zeros here?
+        #    lengthDiff = mzMaxNum - len(indices_list)
+        #    pad = np.zeros((lengthDiff, 1))
+        #    mzs_list = np.concatenate((mzs_list, pad))
+        #    intensities_list = np.concatenate((intensities_list, pad))
+        #    indices_list = np.concatenate((indices_list, pad))
 
     if weighted_bins > 0:
         # check no peaks within bin width of spectrum edge
