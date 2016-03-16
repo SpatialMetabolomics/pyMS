@@ -16,9 +16,10 @@ def apply_smoothing(mzs, counts, type_str="", method_args={}):
                    }
     if type_str not in smoothToApply.keys():
         raise ValueError("{} not in {}".format(type_str, smoothToApply.keys()))
+    np.testing.assert_array_almost_equal(len(mzs), len(counts))
     mzs = np.asarray(mzs, dtype=float)
     counts = np.asarray(counts, dtype=float)
-    return smoothToApply[type_str](mzs,counts,method_args)
+    return smoothToApply[type_str](mzs,counts, **method_args)
 
 
 
