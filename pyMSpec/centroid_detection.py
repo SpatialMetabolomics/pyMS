@@ -35,11 +35,11 @@ def gradient_purePython(mzs, intensities, min_intensity, peak_width_bins):
     mzs_list = [mzs_list[ii] for ii in range(len(mzs_list)) if intensities_list[ii] > min_intensity]
     intensities_list = [intensities_list[ii] for ii in range(len(intensities_list)) if intensities_list[ii] > min_intensity]
     # Quick and dirty approximation of centroids
-    mzs_c, intensities_c = pick_max_pure(mzs, intensities,  indices_list ,peak_width_bins)
+    mzs_c, intensities_c = estimate_centroid_simple_weighting(mzs, intensities,  indices_list ,peak_width_bins)
     return mzs_c, intensities_c
 
 
-def pick_max_pure(mzs, intensities, indices_list,
+def estimate_centroid_simple_weighting(mzs, intensities, indices_list,
                   peak_width_bins):
     """Simple averaging to estimate the peak centroid
     Input:
