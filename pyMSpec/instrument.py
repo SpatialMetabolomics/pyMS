@@ -15,19 +15,20 @@ ver = '0.1 (2 May. 2016)'
 
 class Orbitrap():
 
-    def __init__(self, resolving_power_200):
-        self.resolving_power_200 = resolving_power_200
+    def __init__(self, resolving_power, at_mz=200):
+        self.resolving_power = resolving_power
+        self.at_mz = at_mz
 
     def resolving_power_at_mz(self, mz):
-        return self.resolving_power_200 * (10 / np.sqrt(mz))
+        return self.resolving_power * (np.sqrt(self.at_mz) / np.sqrt(mz))
 
     def sigma_at_mz(self, mz):
         rp = self.resolving_power_at_mz(mz)
         sigma = mz/rp/2.35482004503095 #fwhm = mz*rp, fwhm=2.3sigma
         return sigma
 
-    def get_isotope_pattern(self,formula, adduct, charge):
-        perfect_pattern = pyisocalc.perfect_pattern(pyisocalc.parseSumFormula(formula+adduct), charge=charge)
+    def get_isotope_pattern(self,formula_adduct_string, charge):
+        perfect_pattern = pyisocalc.perfect_pattern(pyisocalc.parseSumFormula(formula_adduct_string), charge=charge)
         sigma = self.sigma_at_mz(perfect_pattern.get_spectrum(source='centroids')[0][0])
         pts_per_mz = 5/sigma
         spec = pyisocalc.apply_gaussian(perfect_pattern,sigma,pts_per_mz)
