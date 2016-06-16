@@ -68,8 +68,8 @@ class MassSpectrum:
 
     def normalise_spectrum(self, method="tic", method_args={}):
         from pyMSpec import normalisation
-        self._centroids_intensity = normalisation.apply_normalisation(self._centroids_intensity, method)
-        self._intensities = normalisation.apply_normalisation(self._intensities, method)
+        self._centroids_intensity = normalisation.apply_normalisation(self._centroids, self._centroids_intensity, method, method_args)
+        self._intensities = normalisation.apply_normalisation(self._mzs, self._intensities, method, method_args)
         self._processing.append(method)
         return self
 
