@@ -13,6 +13,8 @@ def gradient(mzs, intensities, **opt_args):
                 print(i)
             raise NameError('gradient does not take argument: %s' % key)
     # TODO: temporary workaround to disable the parameter until it is fixed.
+    mzs = np.asarray(mzs)
+    intensities = np.asarray(intensities)
     mzMaxNum = function_args['max_output']
     weighted_bins = function_args['weighted_bins']
     min_intensity = function_args['min_intensity']
