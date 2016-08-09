@@ -19,7 +19,7 @@ class Instrument():
         self.at_mz = at_mz
 
     def resolving_power_at_mz(self, mz):
-        raise self.resolving_power
+        return self.resolving_power
 
     def sigma_at_mz(self, mz):
         rp = self.resolving_power_at_mz(mz)
