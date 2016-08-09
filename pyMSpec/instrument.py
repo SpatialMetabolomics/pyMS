@@ -26,10 +26,13 @@ class Instrument():
         sigma = mz/rp/2.35482004503095 #fwhm = mz*rp, fwhm=2.3sigma
         return sigma
 
+    def points_per_mz(self, sigma):
+        return int(5 / sigma)
+
     def get_isotope_pattern(self, formula_adduct_string, charge):
         perfect_pattern = pyisocalc.perfect_pattern(pyisocalc.parseSumFormula(formula_adduct_string), charge=charge)
         sigma = self.sigma_at_mz(perfect_pattern.get_spectrum(source='centroids')[0][0])
-        pts_per_mz = 5 / sigma
+        pts_per_mz = self.points_per_mz(sigma)
         spec = pyisocalc.apply_gaussian(perfect_pattern, sigma, pts_per_mz)
         centroided_mzs, centroided_ints, _ = gradient(*spec.get_spectrum())
         spec.add_centroids(centroided_mzs, centroided_ints)
