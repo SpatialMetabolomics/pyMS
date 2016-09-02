@@ -2,6 +2,75 @@ from __future__ import print_function
 import numpy as np
 
 
+def gradient_purePython(mzs, intensities, min_intensity, peak_width_bins):
+    """This function takes a vector of intensities and finds local maxima based on turning points in the first
+    differential.
+    It is a trivial algorithm that assumes sufficient signal processing has been performed that the spectra are locally smooth.
+    Input
+        mzs: list of mz values for profile spectrum
+        intensities: list of intensity values. must be same length as mzs
+    Output:
+        mzs_c: list of apex mzs
+        intensites_c: list of apex intensities
+    """
+    # Input Checks
+    if not len(mzs)==len(intensities):
+        raise ValueError("Length of mzs must match length of intensities")
+    # Calculate first and second differential
+    dmz = [intensities[ii]-intensities[ii-1] for ii in range(1,len(intensities))]
+    dmz2 = [dmz[ii]-dmz[ii-1] for ii in range(1,len(dmz))]
+    # Find crossing points
+    cPoint = [dmz[ii] * dmz[ii-1] <= 0 for ii in range(1,len(dmz))]
+    mPoint = [d2 < 0 for d2 in dmz2]
+
+    # Get indicies of crossing points
+    # Could check left/right of crossing point
+    indices_list_l = [ii for ii in range(0,len(cPoint)) if all((cPoint[ii], mPoint[ii]))]
+    indices_list_r = [il+ 1 for il in indices_list_l]
+    indices_list = [il if intensities[il]>intensities[ir] else ir for il,ir in zip(indices_list_l,indices_list_r)]
+    indices_list = list(set(indices_list)) #unique values
+    mzs_list = [mzs[ix] for ix in indices_list]
+    intensities_list = [intensities[ix] for ix in indices_list]
+    # Only keep peak above min intensity
+    mzs_list = [mzs_list[ii] for ii in range(len(mzs_list)) if intensities_list[ii] > min_intensity]
+    intensities_list = [intensities_list[ii] for ii in range(len(intensities_list)) if intensities_list[ii] > min_intensity]
+    # Quick and dirty approximation of centroids
+    mzs_c, intensities_c = estimate_centroid_simple_weighting(mzs, intensities,  indices_list ,peak_width_bins)
+    return mzs_c, intensities_c
+
+
+def estimate_centroid_simple_weighting(mzs, intensities, indices_list,
+                  peak_width_bins):
+    """Simple averaging to estimate the peak centroid
+    Input:
+        mzs: profile spectrum mzs
+        intensities: profile spectrum intensities
+        indices_list: mz bin of local maxima
+    Output:
+        mzs_c: centroids mzs
+        intensities_c: centroid intensity (==peak maxima)
+    """
+    if not peak_width_bins%2 == 1:
+        raise ValueError("peak width should be an odd number of bins")
+    weighted_bins = int(peak_width_bins)/2 #note integer division
+    mzs_c = []
+    intensities_c=[]
+    for ii in range(len(indices_list)):
+        s = w = 0.0
+        max_intensity_idx = 0
+        max_intensity = -1
+        for k in xrange(-weighted_bins, weighted_bins + 1):
+            idx = indices_list[ii] + k
+            mz = mzs[idx]
+            intensity = intensities[idx]
+            w += intensity
+            s += mz * intensity
+            if intensity > max_intensity:
+                max_intensity = intensity
+        mzs_c.append(s / w)
+        intensities_c.append(max_intensity)
+    return mzs_c, intensities_c
+
 def gradient(mzs, intensities, **opt_args):
     function_args = {'max_output': -1, 'weighted_bins': 1, 'min_intensity': 1e-5, 'grad_type': 'gradient'}
     for key, val in opt_args.iteritems():
