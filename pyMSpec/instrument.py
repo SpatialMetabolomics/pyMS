@@ -12,22 +12,24 @@ import numpy as np
 from pyMSpec.pyisocalc import pyisocalc
 from pyMSpec.centroid_detection import gradient
 ver = '0.2 (23 Jun. 2016)'
+const_2ln2 = 2.35482004503095
+
 
 class Instrument():
     def __init__(self, resolving_power, at_mz=200):
-        self.resolving_power = resolving_power
-        self.at_mz = at_mz
+        self.resolving_power = float(resolving_power)
+        self.at_mz = float(at_mz)
 
     def resolving_power_at_mz(self, mz):
-        return self.resolving_power
+        return NotImplementedError
 
     def sigma_at_mz(self, mz):
         rp = self.resolving_power_at_mz(mz)
-        sigma = mz/rp/2.35482004503095 #fwhm = mz*rp, fwhm=2.3sigma
+        sigma = mz/rp/const_2ln2 #fwhm = mz*rp, fwhm=2.3sigma
         return sigma
 
     def points_per_mz(self, sigma):
-        return int(5 / sigma)
+        return np.max((10000, int(5 / sigma)))
 
     def get_isotope_pattern(self, formula_adduct_string, charge):
         perfect_pattern = pyisocalc.perfect_pattern(pyisocalc.parseSumFormula(formula_adduct_string), charge=charge)
@@ -38,6 +40,18 @@ class Instrument():
         spec.add_centroids(centroided_mzs, centroided_ints)
         return spec
 
+
+class ConstantResolvingPower(Instrument):
+    def resolving_power_at_mz(self, mz):
+        return self.resolving_power
+
+
+class ConstantFWHM(ConstantResolvingPower):
+    def sigma_at_mz(self, mz):
+        rp = self.resolving_power_at_mz(self.at_mz)
+        fwhm = self.at_mz/rp
+        sigma = fwhm/const_2ln2
+        return sigma
 
 class Orbitrap(Instrument):
     def resolving_power_at_mz(self, mz):
