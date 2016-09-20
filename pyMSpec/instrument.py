@@ -29,7 +29,7 @@ class Instrument():
         return sigma
 
     def points_per_mz(self, sigma):
-        return np.max((10000, int(5 / sigma)))
+        return int(5 / sigma)
 
     def get_isotope_pattern(self, formula_adduct_string, charge):
         perfect_pattern = pyisocalc.perfect_pattern(pyisocalc.parseSumFormula(formula_adduct_string), charge=charge)
