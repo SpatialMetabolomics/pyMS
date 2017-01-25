@@ -3,8 +3,9 @@ import unittest
 
 import numpy
 import scipy.stats
+import six
 
-from common import load_json_file, SimpleMock, resolve_resource
+from .common import load_json_file, SimpleMock, resolve_resource
 from ..pyisocalc.pyisocalc import *
 from ..pyisocalc.canopy.sum_formula import ParseError
 from ..pyisocalc.canopy.sum_formula_actions import InvalidFormulaError
@@ -108,7 +109,7 @@ class SumFormulaTest(unittest.TestCase):
 
 class SumFormulaParsing(unittest.TestCase):
     def test_raises_on_malformed_string(self):
-        syntactically_invalid_strings = ['()=', 'H((H20)3', 'h2o', '', 'H-3', 'H0H4.2', '85H154O17P2']
+        syntactically_invalid_strings = ['()=', 'H((H20)3', 'h2o', '', 'H-3', 'H0H4.2', '85H15;O17P2']
         semantically_invalid_strings = ['ABC', 'FoO', 'Hh20', 'H0', 'H-H', 'H2O-Cl']
         for s in syntactically_invalid_strings:
             self.assertRaises(ParseError, parseSumFormula, s)
@@ -117,7 +118,7 @@ class SumFormulaParsing(unittest.TestCase):
 
     def test_expand(self):
         test_cases = (
-            ('H(NO2)3', 'HO6N3'),
+            ('H(NO2)3', 'HN3O6'),
             ('(N)5', 'N5'),
             ('(((H)2)3)4', 'H24'),
             ('H2O', 'H2O'),
@@ -424,7 +425,7 @@ class PyisocalcTest(unittest.TestCase):
         for s in str_el:
             sf = parseSumFormula(s)
             e_ = {str(s.element()): s.amount() for s in sf.get_segments()}
-            self.assertItemsEqual(e_.keys(), str_el[s].keys())
+            six.assertCountEqual(self, e_.keys(), str_el[s].keys())
             for el in str_el[s]:
                 self.assertEqual(str_el[s][el], e_[el], msg="{} != {}  in {}".format(str_el[s][el], e_[el], el))
 

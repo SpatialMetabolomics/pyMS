@@ -16,6 +16,8 @@ import functools
 import numpy as np
 from numpy import exp  # misc math functions
 from numpy import asarray  # for cartesian product
+from six import iteritems
+from six.moves import xrange
 
 from ..mass_spectrum import MassSpectrum
 from ..centroid_detection import gradient
@@ -262,7 +264,7 @@ def parseSumFormula(string):
     """
     actions = SumFormulaActions()
     counts = canopy_sum_formula_parse(string, actions)
-    return SumFormula([FormulaSegment(Element(str(k)), v) for k, v in counts.iteritems()])
+    return SumFormula([FormulaSegment(Element(str(k)), v) for k, v in iteritems(counts)])
 
 def single_pattern_fft(segment, threshold=1e-9):
     """

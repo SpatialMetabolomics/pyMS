@@ -67,9 +67,7 @@ class Actions(object):
             counts.update(child.complex)
         for child in elements[2]:
             counts.update(child)
-        for k in counts.keys():
-            if counts[k] == 0:
-                del counts[k]
+        counts = {k: counts[k] for k in counts if counts[k] != 0}
 
         if not counts:
             raise InvalidFormulaError("the formula is empty")
