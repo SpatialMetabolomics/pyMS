@@ -58,3 +58,17 @@ def make_sf_adduct_optimusfilter(sum_formulae, adducts, output_filename, sigma=0
                     raise
                 f_out.write("{} [M{}],-1,{}\n".format(sum_formula, adduct,
                                                       isotope_ms.get_spectrum(source='centroids')[0][0]))
+
+def normalise_sf(sf_string):
+    from pyMSpec.pyisocalc.pyisocalc import InvalidFormulaError, ParseError
+    from pyMSpec.pyisocalc.pyisocalc import parseSumFormula
+    import logging
+    try:
+        sf = parseSumFormula(sf_string)
+    except (ParseError, InvalidFormulaError) as e:
+        logging.debug(e)
+        return ""
+    except:
+        logging.warning("failed to parse: {}".format(sf_string))
+        return ""
+    return sf.__unicode__()

@@ -253,7 +253,17 @@ class SumFormula(object):
             return NotImplemented
 
     def __str__(self):
-        return ''.join(map(str, self._segments))
+        composition = [[s.element().name(), str(s.amount())]
+                        if s.amount() > 1 else [s.element().name(), ""]
+                                for s in sorted(self.get_segments())]
+        out_str = ""
+        c_ix = [ii for ii in range(len(composition)) if composition[ii][0]=='C']
+        h_ix = [ii for ii in range(len(composition)) if composition[ii][0] == 'H']
+        if not c_ix == []:
+            out_str += "".join(composition.pop(c_ix[0]))
+        if not h_ix == []:
+                out_str += "".join(composition.pop(h_ix[0]))
+        return out_str + ''.join(["".join(n_a) for n_a in composition][::-1])
 
     def __unicode__(self):
         return self.__str__()
