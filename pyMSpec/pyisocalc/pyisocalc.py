@@ -257,12 +257,10 @@ class SumFormula(object):
                         if s.amount() > 1 else [s.element().name(), ""]
                                 for s in sorted(self.get_segments())]
         out_str = ""
-        c_ix = [ii for ii in range(len(composition)) if composition[ii][0]=='C']
-        h_ix = [ii for ii in range(len(composition)) if composition[ii][0] == 'H']
-        if not c_ix == []:
-            out_str += "".join(composition.pop(c_ix[0]))
-        if not h_ix == []:
-                out_str += "".join(composition.pop(h_ix[0]))
+        for el in 'CHNOPS':
+            l_ix = [ii for ii in range(len(composition)) if composition[ii][0]==el]
+            if l_ix:
+                out_str += "".join(composition.pop(l_ix[0]))
         return out_str + ''.join(["".join(n_a) for n_a in composition][::-1])
 
     def __unicode__(self):
@@ -274,7 +272,7 @@ def parseSumFormula(string):
     """
     actions = SumFormulaActions()
     counts = canopy_sum_formula_parse(string, actions)
-    return SumFormula([FormulaSegment(Element(str(k)), v) for k, v in iteritems(counts)])
+    return SumFormula([FormulaSegment(Element(str(k)), v) for k, v in counts.items()])
 
 def single_pattern_fft(segment, threshold=1e-9):
     """
@@ -358,7 +356,7 @@ def cartesian(rx, mx, threshold=0.0001):
     :rtype: Tuple[ndarray]
     """
     ry, my = asarray(rx[0]), asarray(mx[0])
-    for i in xrange(1, len(rx)):
+    for i in range(1, len(rx)):
         newr = np.outer(rx[i], ry).ravel()
         newm = np.add.outer(mx[i], my).ravel()
         js = np.where(newr > threshold)[0]
