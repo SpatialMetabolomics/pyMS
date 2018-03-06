@@ -21,7 +21,7 @@ class Instrument():
         self.at_mz = float(at_mz)
 
     def resolving_power_at_mz(self, mz):
-        return NotImplementedError
+        raise NotImplementedError
 
     def sigma_at_mz(self, mz):
         rp = self.resolving_power_at_mz(mz)
@@ -31,6 +31,15 @@ class Instrument():
     def points_per_mz(self, sigma):
         return int(5 / sigma)
 
+    def fwhm_at_mz(self, mz):
+        rp = self.resolving_power_at_mz(self.at_mz)
+        fwhm = mz / rp
+        return fwhm
+
+    def get_principal_peak(self, formula_adduct_string, charge):
+        perfect_pattern = pyisocalc.perfect_pattern(pyisocalc.parseSumFormula(formula_adduct_string), charge=charge).get_spectrum(source='centroids')
+        return perfect_pattern[0][np.argmax(perfect_pattern[1])]
+
     def get_isotope_pattern(self, formula_adduct_string, charge):
         perfect_pattern = pyisocalc.perfect_pattern(pyisocalc.parseSumFormula(formula_adduct_string), charge=charge)
         sigma = self.sigma_at_mz(perfect_pattern.get_spectrum(source='centroids')[0][0])
@@ -39,6 +48,19 @@ class Instrument():
         centroided_mzs, centroided_ints, _ = gradient(*spec.get_spectrum())
         spec.add_centroids(centroided_mzs, centroided_ints)
         return spec
+
+    def generate_mz_axis(self, mz_min, mz_max, pts_per_fwhm=2):
+        """
+        returns mz axis
+        """
+        mz_axis = []
+        mz = mz_min
+        while mz < mz_max:
+            fwhm = self.fwhm_at_mz(mz)
+            step = fwhm / pts_per_fwhm
+            mz_axis.append(mz + step)
+            mz += step
+        return np.asarray(mz_axis)
 
 
 class ConstantResolvingPower(Instrument):
@@ -62,3 +84,10 @@ class FTICR(Instrument):
     def resolving_power_at_mz(self, mz):
         return  (self.resolving_power / mz) * self.at_mz
 
+
+Orbitrap_HF = Orbitrap
+
+TOF = ConstantResolvingPower
+qTOF = TOF
+Synapt = TOF
+TOF_reflector = TOF
